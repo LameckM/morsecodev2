@@ -528,6 +528,13 @@ function PracticePage() {
   const [score, setScore] = useState(0)
   const [streak, setStreak] = useState(0)
   const [answered, setAnswered] = useState(false)
+  const [practiceStats, setPracticeStats] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('morsecodev2-practice-stats') ?? '{"answered":0,"correct":0,"bestStreak":0}') as { answered: number; correct: number; bestStreak: number }
+    } catch {
+      return { answered: 0, correct: 0, bestStreak: 0 }
+    }
+  })
 
   const pool = category === 'All' ? MORSE_CHARACTERS : MORSE_CHARACTERS.filter((item) => item.category === category)
 
@@ -560,9 +567,18 @@ function PracticePage() {
     setAnswer(value)
     setAnswered(true)
     const correctValue = mode === 'Decode' ? question.character : question.code
-    if (value === correctValue) {
+    const isCorrectAnswer = value === correctValue
+    const nextStreak = isCorrectAnswer ? streak + 1 : 0
+    const nextStats = {
+      answered: practiceStats.answered + 1,
+      correct: practiceStats.correct + (isCorrectAnswer ? 1 : 0),
+      bestStreak: Math.max(practiceStats.bestStreak, nextStreak),
+    }
+    setPracticeStats(nextStats)
+    localStorage.setItem('morsecodev2-practice-stats', JSON.stringify(nextStats))
+    if (isCorrectAnswer) {
       setScore((current) => current + 1)
-      setStreak((current) => current + 1)
+      setStreak(nextStreak)
     } else {
       setStreak(0)
     }
@@ -878,6 +894,78 @@ function ListeningPage() {
   )
 }
 
+
+type ProgressAttempt = { date: string; score: number; total: number }
+
+function readProgressData<T,>(key: string, fallback: T): T {
+  try {
+    const stored = localStorage.getItem(key)
+    return stored ? JSON.parse(stored) as T : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function ProgressPage({ onContinue }: { onContinue: () => void }) {
+  const [completedLessons] = useState<number[]>(() => readProgressData('morsecodev2-completed-lessons', []))
+  const [practiceStats] = useState(() => readProgressData('morsecodev2-practice-stats', { answered: 0, correct: 0, bestStreak: 0 }))
+  const [assessmentAttempts] = useState<ProgressAttempt[]>(() => readProgressData('morsecodev2-assessment-attempts', []))
+  const [listeningAttempts] = useState<ProgressAttempt[]>(() => readProgressData('morsecodev2-listening-attempts', []))
+
+  const lessonPercent = Math.round((completedLessons.length / LETTER_LESSONS.length) * 100)
+  const practiceAccuracy = practiceStats.answered ? Math.round((practiceStats.correct / practiceStats.answered) * 100) : 0
+  const assessmentQuestions = assessmentAttempts.reduce((sum, attempt) => sum + attempt.total, 0)
+  const assessmentCorrect = assessmentAttempts.reduce((sum, attempt) => sum + attempt.score, 0)
+  const assessmentAccuracy = assessmentQuestions ? Math.round((assessmentCorrect / assessmentQuestions) * 100) : 0
+  const listeningQuestions = listeningAttempts.reduce((sum, attempt) => sum + attempt.total, 0)
+  const listeningCorrect = listeningAttempts.reduce((sum, attempt) => sum + attempt.score, 0)
+  const listeningAccuracy = listeningQuestions ? Math.round((listeningCorrect / listeningQuestions) * 100) : 0
+  const totalQuestions = practiceStats.answered + assessmentQuestions + listeningQuestions
+  const totalCorrect = practiceStats.correct + assessmentCorrect + listeningCorrect
+  const overallAccuracy = totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : 0
+  const nextLesson = LETTER_LESSONS.find((lesson) => !completedLessons.includes(lesson.id))
+  const activity = [
+    ...assessmentAttempts.map((attempt) => ({ ...attempt, kind: 'Assessment' })),
+    ...listeningAttempts.map((attempt) => ({ ...attempt, kind: 'Listening' })),
+  ].slice(0, 6)
+
+  return (
+    <section className="progress-page">
+      <div className="training-intro">
+        <div className="eyebrow">YOUR PERSONAL LEARNING RECORD</div>
+        <h1>Progress with <em>purpose.</em></h1>
+        <p>See what you have learned, how accurately you recognise Morse, and where to focus next. Your records are stored in this browser.</p>
+      </div>
+      <div className="progress-overview-grid">
+        <article className="progress-stat-card"><span className="eyebrow">OVERALL ACCURACY</span><strong>{overallAccuracy}<small>%</small></strong><span>{totalQuestions} answers recorded</span></article>
+        <article className="progress-stat-card"><span className="eyebrow">LESSONS COMPLETED</span><strong>{completedLessons.length}<small> / {LETTER_LESSONS.length}</small></strong><span>{lessonPercent}% of the course</span></article>
+        <article className="progress-stat-card"><span className="eyebrow">PRACTICE STREAK</span><strong>{practiceStats.bestStreak}</strong><span>Best consecutive correct answers</span></article>
+      </div>
+      <div className="progress-main-grid">
+        <div className="progress-panel">
+          <div className="progress-panel-heading"><div><span className="eyebrow">COURSE COMPLETION</span><h2>Your learning path</h2></div><strong>{lessonPercent}%</strong></div>
+          <div className="progress-large-track"><span style={{ width: lessonPercent + '%' }} /></div>
+          <div className="progress-lesson-list">{LETTER_LESSONS.map((lesson) => {
+            const done = completedLessons.includes(lesson.id)
+            return <div className="progress-lesson-row" key={lesson.id}><span className={done ? 'progress-check done' : 'progress-check'}>{done ? '✓' : String(lesson.id).padStart(2, '0')}</span><div><strong>{lesson.title}</strong><small>{lesson.letters.join(' · ')}</small></div><span className={done ? 'progress-state complete' : 'progress-state'}>{done ? 'COMPLETE' : 'UP NEXT'}</span></div>
+          })}</div>
+        </div>
+        <div className="progress-panel progress-skills-panel">
+          <span className="eyebrow">SKILL BREAKDOWN</span><h2>How you're doing</h2>
+          <div className="progress-skill"><div><span>Quick practice</span><strong>{practiceAccuracy}%</strong></div><div className="progress-skill-track"><span style={{ width: practiceAccuracy + '%' }} /></div><small>{practiceStats.correct} correct of {practiceStats.answered} answers</small></div>
+          <div className="progress-skill"><div><span>Assessments</span><strong>{assessmentAccuracy}%</strong></div><div className="progress-skill-track"><span style={{ width: assessmentAccuracy + '%' }} /></div><small>{assessmentAttempts.length} completed {assessmentAttempts.length === 1 ? 'test' : 'tests'}</small></div>
+          <div className="progress-skill"><div><span>Listening</span><strong>{listeningAccuracy}%</strong></div><div className="progress-skill-track"><span style={{ width: listeningAccuracy + '%' }} /></div><small>{listeningAttempts.length} completed {listeningAttempts.length === 1 ? 'round' : 'rounds'}</small></div>
+        </div>
+      </div>
+      <div className="progress-bottom-grid">
+        <div className="progress-panel progress-next-panel"><span className="eyebrow">YOUR NEXT STEP</span><h2>{nextLesson ? nextLesson.title : 'The alphabet is complete.'}</h2><p>{nextLesson ? nextLesson.focus : 'You have completed all seven guided letter lessons. Keep your skills sharp with practice and listening challenges.'}</p><button className="lesson-primary-button" onClick={onContinue}>Continue learning <span>→</span></button></div>
+        <div className="progress-panel"><div className="progress-panel-heading"><div><span className="eyebrow">RECENT ACTIVITY</span><h2>Latest sessions</h2></div></div>{activity.length ? activity.map((attempt,index) => <div className="progress-activity-row" key={attempt.kind + index}><span>{attempt.kind}</span><small>{attempt.date}</small><strong>{attempt.score}/{attempt.total}</strong></div>) : <p className="progress-empty">Your completed assessments and listening rounds will appear here.</p>}</div>
+      </div>
+      <p className="progress-storage-note">Progress is saved locally in this browser. Clearing browser data or using another device may reset or separate these records.</p>
+    </section>
+  )
+}
+
 function App() {
   const [activePage, setActivePage] = useState<Page>('Overview')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -999,13 +1087,13 @@ function App() {
             <ListeningPage />
           ) : activePage === 'Assessments' ? (
             <AssessmentsPage />
-          ) : activePage === 'Morse Visualizer' ? (
+          ) : activePage === 'Progress' ? (\n            <ProgressPage onContinue={() => selectPage('Learn')} />\n          ) : activePage === 'Morse Visualizer' ? (
             <MorseVisualizerPage />
           ) : (
             <section className="placeholder-page">
               <div className="eyebrow">MORSECODE LEARNING STUDIO</div>
               <h1>{activePage}<em>.</em></h1>
-              <p>This section is part of the learning studio. Its interactive features will be built in the next development steps.</p>
+              <p>This section is part of the learning studio. Choose a learning activity from the workspace to continue.</p>
               <div className="placeholder-line"><span>·</span><span>−</span><span>·</span><span>·</span></div>
               <button className="return-button" onClick={() => selectPage('Overview')}>← Back to overview</button>
             </section>
