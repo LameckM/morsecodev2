@@ -120,6 +120,9 @@ function LearnPage() {
     }
   })
   const [selectedLesson, setSelectedLesson] = useState(0)
+  const [reviewIndex, setReviewIndex] = useState(0)
+  const [codeRevealed, setCodeRevealed] = useState(false)
+  const [learningStage, setLearningStage] = useState<'study' | 'quiz'>('study')
   const [questionIndex, setQuestionIndex] = useState(0)
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('')
   const [showFoundations, setShowFoundations] = useState(true)
@@ -127,10 +130,15 @@ function LearnPage() {
   const lesson = LETTER_LESSONS[selectedLesson]
   const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
   const lessonCharacters = lesson.letters.map((letter) => alphabet.find((item) => item.character === letter)!).filter(Boolean)
+  const studyCharacter = lessonCharacters[reviewIndex]
   const target = lessonCharacters[questionIndex]
-  const choices = target
-    ? [target, ...alphabet.filter((item) => item.character !== target.character).slice((target.character.charCodeAt(0) - 65) % 20, (target.character.charCodeAt(0) - 65) % 20 + 3)].sort((a, b) => a.character.localeCompare(b.character))
+  const distractors = target
+    ? alphabet.filter((item) => item.character !== target.character).slice((target.character.charCodeAt(0) - 65) % 20, (target.character.charCodeAt(0) - 65) % 20 + 3)
     : []
+  const choices = target ? [target, ...distractors].sort((a, b) => {
+    const rotate = (questionIndex + selectedLesson) % 4
+    return ((a.character.charCodeAt(0) + rotate) % 4) - ((b.character.charCodeAt(0) + rotate) % 4)
+  }) : []
   const isComplete = completed.includes(lesson.id)
   const completedCount = completed.length
   const progressPercent = Math.round((completedCount / LETTER_LESSONS.length) * 100)
@@ -138,14 +146,23 @@ function LearnPage() {
   const chooseLesson = (index: number) => {
     if (index > 0 && !completed.includes(LETTER_LESSONS[index - 1].id)) return
     setSelectedLesson(index)
+    setReviewIndex(0)
+    setCodeRevealed(false)
+    setLearningStage('study')
     setQuestionIndex(0)
     setFeedback('')
     setShowFoundations(false)
   }
 
-  const chooseAnswer = (character: string) => {
+  const startQuiz = () => {
+    setLearningStage('quiz')
+    setQuestionIndex(0)
+    setFeedback('')
+  }
+
+  const chooseAnswer = (code: string) => {
     if (!target || feedback || isComplete) return
-    if (character === target.character) {
+    if (code === target.code) {
       setFeedback('correct')
       if (questionIndex === lessonCharacters.length - 1) {
         const nextCompleted = [...new Set([...completed, lesson.id])]
@@ -171,8 +188,20 @@ function LearnPage() {
   const nextLesson = () => {
     if (selectedLesson < LETTER_LESSONS.length - 1) {
       setSelectedLesson((current) => current + 1)
+      setReviewIndex(0)
+      setCodeRevealed(false)
+      setLearningStage('study')
       setQuestionIndex(0)
       setFeedback('')
+    }
+  }
+
+  const advanceStudy = () => {
+    if (reviewIndex < lessonCharacters.length - 1) {
+      setReviewIndex((current) => current + 1)
+      setCodeRevealed(false)
+    } else {
+      startQuiz()
     }
   }
 
@@ -181,7 +210,7 @@ function LearnPage() {
       <div className="learn-intro">
         <div className="eyebrow">YOUR GUIDED COURSE</div>
         <h1>Learn it <em>step by step.</em></h1>
-        <p>Build recognition gradually. Each lesson introduces a small group of letters, then checks what you remember.</p>
+        <p>First try to remember each pattern. Reveal it only after making a guess, then test your memory without the answers in view.</p>
       </div>
 
       <div className="learn-progress-panel">
@@ -217,40 +246,54 @@ function LearnPage() {
               </div>
               <div className="timing-note"><strong>Timing matters</strong><p>A gap between parts of the same character is one unit. The gap between letters is three units, and the gap between words is seven units.</p></div>
               <div className="lesson-example"><span className="eyebrow">YOUR FIRST EXAMPLE</span><div className="example-pair"><span className="example-letter">E</span><span className="example-code">·</span><span className="example-divider" /><span className="example-letter">T</span><span className="example-code">−</span></div><p>E is one dot. T is one dash. These are the two simplest letters.</p></div>
-              <button className="lesson-primary-button" onClick={() => { setShowFoundations(false); setSelectedLesson(0); setQuestionIndex(0); setFeedback('') }}>Begin lesson 01 <span>→</span></button>
+              <button className="lesson-primary-button" onClick={() => { setShowFoundations(false); setSelectedLesson(0); setReviewIndex(0); setCodeRevealed(false); setLearningStage('study'); setQuestionIndex(0); setFeedback('') }}>Begin lesson 01 <span>→</span></button>
             </div>
           ) : (
             <div className="lesson-content">
-              <div className="lesson-content-top"><span className="lesson-kicker">LESSON {String(lesson.id).padStart(2, '0')} / 07</span><span className="lesson-step">{isComplete ? 'COMPLETED' : 'LEARN & CHECK'}</span></div>
+              <div className="lesson-content-top"><span className="lesson-kicker">LESSON {String(lesson.id).padStart(2, '0')} / 07</span><span className="lesson-step">{isComplete ? 'COMPLETED' : learningStage === 'study' ? 'MEMORY PRACTICE' : 'RECALL CHECK'}</span></div>
               <h2>{lesson.title}</h2>
               <p className="lesson-lead">{lesson.focus}</p>
-              <div className="lesson-character-grid">
-                {lessonCharacters.map((item) => (
-                  <div className="lesson-character" key={item.character}>
-                    <span className="lesson-character-letter">{item.character}</span>
-                    <span className="lesson-character-code">{item.code.replaceAll('.', '·').replaceAll('-', '−')}</span>
-                    <span className="lesson-character-cue">{item.code.split('').map((signal) => signal === '.' ? 'DOT' : 'DASH').join(' · ')}</span>
+
+              {isComplete ? (
+                <div className="quiz-complete lesson-finished-panel"><strong>Lesson completed.</strong><p>You passed the recall check. Your progress is saved on this device.</p>{selectedLesson < LETTER_LESSONS.length - 1 ? <button className="lesson-primary-button" onClick={nextLesson}>Next lesson <span>→</span></button> : <p className="course-finished">You have completed all the letter lessons.</p>}</div>
+              ) : learningStage === 'study' ? (
+                <div className="study-stage">
+                  <div className="study-stage-heading"><span className="eyebrow">CHARACTER {reviewIndex + 1} OF {lessonCharacters.length}</span><span className="study-progress">{reviewIndex + 1} / {lessonCharacters.length}</span></div>
+                  <div className="study-card">
+                    <span className="study-prompt">Look at the letter. Can you remember its Morse pattern?</span>
+                    <strong className="study-letter">{studyCharacter?.character}</strong>
+                    {codeRevealed ? (
+                      <div className="study-reveal">
+                        <span className="study-code">{studyCharacter?.code.replaceAll('.', '·').replaceAll('-', '−')}</span>
+                        <span className="study-rhythm">{studyCharacter?.code.split('').map((signal) => signal === '.' ? 'DIT' : 'DAH').join(' · ')}</span>
+                        <p>Say the rhythm, then picture the sequence. Try to recall it once more before moving on.</p>
+                      </div>
+                    ) : (
+                      <button className="study-reveal-button" onClick={() => setCodeRevealed(true)}>Reveal Morse pattern <span>↗</span></button>
+                    )}
                   </div>
-                ))}
-              </div>
-              <div className="memory-tip"><span>MEMORY TIP</span><p>Say the pattern aloud as a rhythm: “{target?.code.split('').map((signal) => signal === '.' ? 'dit' : 'dah').join(' – ')}”. Keep the order exact; a different order makes a different letter.</p></div>
-              <div className="lesson-quiz">
-                <div className="quiz-heading"><div><span className="eyebrow">QUICK CHECK</span><h3>{isComplete ? 'Lesson passed' : 'Which pattern belongs to this letter?'}</h3></div><span>{isComplete ? lessonCharacters.length : questionIndex + 1} / {lessonCharacters.length}</span></div>
-                {isComplete ? (
-                  <div className="quiz-complete"><strong>Well done — you completed this lesson.</strong><p>Your progress is saved on this device. Continue when you are ready for the next group.</p>{selectedLesson < LETTER_LESSONS.length - 1 ? <button className="lesson-primary-button" onClick={nextLesson}>Next lesson <span>→</span></button> : <p className="course-finished">You have completed all the letter lessons.</p>}</div>
-                ) : (
-                  <>
+                  <div className="study-stage-footer">
+                    <div className="study-dots">{lessonCharacters.map((item, index) => <span key={item.character} className={index <= reviewIndex ? 'active' : ''} />)}</div>
+                    {codeRevealed ? <button className="lesson-primary-button" onClick={advanceStudy}>{reviewIndex === lessonCharacters.length - 1 ? 'Start recall check' : 'Next character'} <span>→</span></button> : <span className="study-hint">Try to recall it before revealing</span>}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="recall-banner"><span className="eyebrow">NO PATTERNS SHOWN ABOVE</span><p>Use your memory. Choose the Morse pattern for the letter below.</p></div>
+                  <div className="lesson-quiz">
+                    <div className="quiz-heading"><div><span className="eyebrow">QUICK CHECK</span><h3>Which pattern belongs to this letter?</h3></div><span>{questionIndex + 1} / {lessonCharacters.length}</span></div>
                     <p className="quiz-question">Choose the Morse code for <strong>{target?.character}</strong>.</p>
                     <div className="quiz-options">
-                      {choices.map((choice) => <button key={choice.character} className="quiz-option" disabled={Boolean(feedback)} onClick={() => chooseAnswer(choice.character)}>{choice.code.replaceAll('.', '·').replaceAll('-', '−')}</button>)}
+                      {choices.map((choice) => <button key={choice.character} className="quiz-option" disabled={Boolean(feedback)} onClick={() => chooseAnswer(choice.code)}>{choice.code.replaceAll('.', '·').replaceAll('-', '−')}</button>)}
                     </div>
-                    {feedback && <div className={feedback === 'correct' ? 'quiz-feedback good' : 'quiz-feedback retry'}>{feedback === 'correct' ? 'Correct. You recognised the pattern.' : 'Not quite. Try again and pay attention to the order of the signals.'}</div>}
+                    {feedback && <div className={feedback === 'correct' ? 'quiz-feedback good' : 'quiz-feedback retry'}>{feedback === 'correct' ? 'Correct. You recalled the pattern.' : 'Not quite. Think of the sequence, then try again.'}</div>}
                     {feedback === 'correct' && questionIndex < lessonCharacters.length - 1 && <button className="lesson-primary-button" onClick={continueQuiz}>Next question <span>→</span></button>}
                     {feedback === 'incorrect' && <button className="lesson-secondary-button" onClick={continueQuiz}>Try again</button>}
                     {feedback === 'correct' && questionIndex === lessonCharacters.length - 1 && <div className="quiz-feedback good">Lesson complete. Your result has been saved.</div>}
-                  </>
-                )}
-              </div>
+                  </div>
+                  <button className="lesson-back-link" onClick={() => { setLearningStage('study'); setReviewIndex(0); setCodeRevealed(false); setQuestionIndex(0); setFeedback('') }}>← Review the characters again</button>
+                </>
+              )}
               <button className="lesson-back-link" onClick={() => setShowFoundations(true)}>← Back to foundations</button>
             </div>
           )}
