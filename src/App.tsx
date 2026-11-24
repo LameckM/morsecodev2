@@ -743,7 +743,7 @@ function AssessmentsPage() {
     const finalAnswers = [...answers, selectedAnswer]
     const finalScore = questions.reduce((total, item, index) => total + (finalAnswers[index] === item.character.code ? 1 : 0), 0)
     const now = new Date()
-    const attemptNumber = readStoredValue('morsecodev2-assessment-attempt-count', 0, isNonNegativeInteger) + 1
+    const attemptNumber = readStoredValue('morsecodev2-assessment-attempt-count', attempts.length, isNonNegativeInteger) + 1
     writeStoredValue('morsecodev2-assessment-attempt-count', attemptNumber)
     const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: questions.length, attemptNumber }, ...attempts].slice(0, 8)
     setAnswers(finalAnswers)
@@ -895,7 +895,7 @@ function ListeningPage() {
     if (questionNumber === 10) {
       const finalScore = score
       const now = new Date()
-      const attemptNumber = readStoredValue('morsecodev2-listening-attempt-count', 0, isNonNegativeInteger) + 1
+      const attemptNumber = readStoredValue('morsecodev2-listening-attempt-count', attempts.length, isNonNegativeInteger) + 1
       writeStoredValue('morsecodev2-listening-attempt-count', attemptNumber)
       const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: 10, attemptNumber }, ...attempts].slice(0, 8)
       setAttempts(nextAttempts)
