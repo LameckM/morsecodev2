@@ -2,6 +2,7 @@ import { useState } from 'react'
 import './App.css'
 import { MORSE_CHARACTERS, type MorseCategory } from './data/morseCode'
 import { LETTER_LESSONS } from './data/lessons'
+import { LETTER_MNEMONICS } from './data/mnemonics'
 
 type Page = 'Overview' | 'Learn' | 'Practice' | 'Morse Visualizer' | 'Reference' | 'Progress'
 
@@ -131,6 +132,7 @@ function LearnPage() {
   const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
   const lessonCharacters = lesson.letters.map((letter) => alphabet.find((item) => item.character === letter)!).filter(Boolean)
   const studyCharacter = lessonCharacters[reviewIndex]
+  const studyMnemonic = studyCharacter ? LETTER_MNEMONICS[studyCharacter.character] ?? [] : []
   const target = lessonCharacters[questionIndex]
   const distractors = target
     ? alphabet.filter((item) => item.character !== target.character).slice((target.character.charCodeAt(0) - 65) % 20, (target.character.charCodeAt(0) - 65) % 20 + 3)
@@ -262,6 +264,21 @@ function LearnPage() {
                   <div className="study-card">
                     <span className="study-prompt">Look at the letter. Can you remember its Morse pattern?</span>
                     <strong className="study-letter">{studyCharacter?.character}</strong>
+                    <div className="mnemonic-panel">
+                      <span className="mnemonic-heading">MEMORY PHRASE</span>
+                      <div className="mnemonic-phrase">
+                        {studyMnemonic.map((word, index) => {
+                          const isDash = /[A-Z]/.test(word) && word === word.toUpperCase()
+                          return (
+                            <span className={isDash ? 'mnemonic-token dash-token' : 'mnemonic-token dot-token'} key={index}>
+                              <strong>{word}</strong>
+                              <small>{isDash ? '— DASH' : '· DOT'}</small>
+                            </span>
+                          )
+                        })}
+                      </div>
+                      <span className="mnemonic-key"><b>UPPERCASE</b> = DASH <i /> <b>lowercase</b> = DOT</span>
+                    </div>
                     {codeRevealed ? (
                       <div className="study-reveal">
                         <span className="study-code">{studyCharacter?.code.replaceAll('.', '·').replaceAll('-', '−')}</span>
