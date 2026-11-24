@@ -404,7 +404,15 @@ function MorseVisualizerPage() {
 
   const step = (direction: -1 | 1) => {
     setIsPlaying(false)
-    setActiveIndex((current) => Math.max(0, Math.min(phrase.length - 1, current + direction)))
+    const nextIndex = Math.max(0, Math.min(phrase.length - 1, activeIndex + direction))
+    setActiveIndex(nextIndex)
+
+    const word = phrase[nextIndex]
+    if (!word) return
+
+    const context = audioContextRef.current ?? new AudioContext()
+    audioContextRef.current = context
+    void context.resume().then(() => playSignal(word, context))
   }
 
   return (
