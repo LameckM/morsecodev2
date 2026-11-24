@@ -17,6 +17,62 @@ const navigation: { label: Page; icon: string; description: string }[] = [
   { label: 'Progress', icon: '↗', description: 'Your learning journey' },
 ]
 
+type PracticeStats = { answered: number; correct: number; bestStreak: number }
+type StoredAttempt = { date: string; score: number; total: number }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isNonNegativeNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
+function isCompletedLessons(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((item) => Number.isInteger(item) && item >= 1 && item <= LETTER_LESSONS.length)
+}
+
+function isPracticeStats(value: unknown): value is PracticeStats {
+  return isRecord(value) &&
+    isNonNegativeNumber(value.answered) &&
+    isNonNegativeNumber(value.correct) &&
+    value.correct <= value.answered &&
+    isNonNegativeNumber(value.bestStreak) &&
+    value.bestStreak <= value.answered
+}
+
+function isAttemptHistory(value: unknown): value is StoredAttempt[] {
+  return Array.isArray(value) && value.every((item) =>
+    isRecord(item) &&
+    typeof item.date === 'string' &&
+    isNonNegativeNumber(item.score) &&
+    isNonNegativeNumber(item.total) &&
+    item.score <= item.total
+  )
+}
+
+function readStoredValue<T>(key: string, fallback: T, validate: (value: unknown) => value is T): T {
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return fallback
+    const parsed: unknown = JSON.parse(raw)
+    return validate(parsed) ? parsed : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function writeStoredValue(key: string, value: unknown): boolean {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value))
+    return true
+  } catch {
+    // Storage can be unavailable or full; the app should remain usable in memory.
+    return false
+  }
+}
+
+
 
 function ReferencePage() {
   const [category, setCategory] = useState<'All' | MorseCategory>('All')
@@ -114,14 +170,9 @@ function ReferencePage() {
 
 
 function LearnPage() {
-  const [completed, setCompleted] = useState<number[]>(() => {
-    try {
-      const saved = localStorage.getItem('morsecodev2-completed-lessons')
-      return saved ? JSON.parse(saved) as number[] : []
-    } catch {
-      return []
-    }
-  })
+  const [completed, setCompleted] = useState<number[]>(() =>
+    readStoredValue('morsecodev2-completed-lessons', [], isCompletedLessons)
+  )
   const [selectedLesson, setSelectedLesson] = useState(0)
   const [reviewIndex, setReviewIndex] = useState(0)
   const [codeRevealed, setCodeRevealed] = useState(false)
@@ -171,7 +222,7 @@ function LearnPage() {
       if (questionIndex === lessonCharacters.length - 1) {
         const nextCompleted = [...new Set([...completed, lesson.id])]
         setCompleted(nextCompleted)
-        localStorage.setItem('morsecodev2-completed-lessons', JSON.stringify(nextCompleted))
+        writeStoredValue('morsecodev2-completed-lessons', nextCompleted)
       }
     } else {
       setFeedback('incorrect')
@@ -529,13 +580,9 @@ function PracticePage() {
   const [score, setScore] = useState(0)
   const [streak, setStreak] = useState(0)
   const [answered, setAnswered] = useState(false)
-  const [practiceStats, setPracticeStats] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('morsecodev2-practice-stats') ?? '{"answered":0,"correct":0,"bestStreak":0}') as { answered: number; correct: number; bestStreak: number }
-    } catch {
-      return { answered: 0, correct: 0, bestStreak: 0 }
-    }
-  })
+  const [practiceStats, setPracticeStats] = useState<PracticeStats>(() =>
+    readStoredValue('morsecodev2-practice-stats', { answered: 0, correct: 0, bestStreak: 0 }, isPracticeStats)
+  )
 
   const pool = category === 'All' ? MORSE_CHARACTERS : MORSE_CHARACTERS.filter((item) => item.category === category)
 
@@ -576,7 +623,7 @@ function PracticePage() {
       bestStreak: Math.max(practiceStats.bestStreak, nextStreak),
     }
     setPracticeStats(nextStats)
-    localStorage.setItem('morsecodev2-practice-stats', JSON.stringify(nextStats))
+    writeStoredValue('morsecodev2-practice-stats', nextStats)
     if (isCorrectAnswer) {
       setScore((current) => current + 1)
       setStreak(nextStreak)
@@ -648,13 +695,9 @@ function AssessmentsPage() {
   const [selectedAnswer, setSelectedAnswer] = useState('')
   const [answers, setAnswers] = useState<string[]>([])
   const [finished, setFinished] = useState(false)
-  const [attempts, setAttempts] = useState<AssessmentAttempt[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('morsecodev2-assessment-attempts') ?? '[]') as AssessmentAttempt[]
-    } catch {
-      return []
-    }
-  })
+  const [attempts, setAttempts] = useState<AssessmentAttempt[]>(() =>
+    readStoredValue('morsecodev2-assessment-attempts', [], isAttemptHistory)
+  )
 
   const startAssessment = () => {
     setQuestions(makeAssessmentQuestions())
@@ -676,7 +719,7 @@ function AssessmentsPage() {
     const nextAttempts = [{ date: new Date().toLocaleDateString(), score: finalScore, total: questions.length }, ...attempts].slice(0, 8)
     setAnswers(finalAnswers)
     setAttempts(nextAttempts)
-    localStorage.setItem('morsecodev2-assessment-attempts', JSON.stringify(nextAttempts))
+    writeStoredValue('morsecodev2-assessment-attempts', nextAttempts)
     setFinished(true)
   }
 
@@ -779,13 +822,9 @@ function ListeningPage() {
   const [score, setScore] = useState(0)
   const [streak, setStreak] = useState(0)
   const [roundComplete, setRoundComplete] = useState(false)
-  const [attempts, setAttempts] = useState<ListeningAttempt[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('morsecodev2-listening-attempts') ?? '[]') as ListeningAttempt[]
-    } catch {
-      return []
-    }
-  })
+  const [attempts, setAttempts] = useState<ListeningAttempt[]>(() =>
+    readStoredValue('morsecodev2-listening-attempts', [], isAttemptHistory)
+  )
 
   const unitMs = 1200 / speed
   const selected = MORSE_CHARACTERS.find((item) => item.character === selectedCharacter) ?? MORSE_CHARACTERS[0]
@@ -821,7 +860,7 @@ function ListeningPage() {
       const finalScore = score
       const nextAttempts = [{ date: new Date().toLocaleDateString(), score: finalScore, total: 10 }, ...attempts].slice(0, 8)
       setAttempts(nextAttempts)
-      localStorage.setItem('morsecodev2-listening-attempts', JSON.stringify(nextAttempts))
+      writeStoredValue('morsecodev2-listening-attempts', nextAttempts)
       setRoundComplete(true)
       return
     }
@@ -899,20 +938,15 @@ function ListeningPage() {
 
 type ProgressAttempt = { date: string; score: number; total: number }
 
-function readProgressData<T,>(key: string, fallback: T): T {
-  try {
-    const stored = localStorage.getItem(key)
-    return stored ? JSON.parse(stored) as T : fallback
-  } catch {
-    return fallback
-  }
+function readProgressData<T,>(key: string, fallback: T, validate: (value: unknown) => value is T): T {
+  return readStoredValue(key, fallback, validate)
 }
 
 function ProgressPage({ onContinue }: { onContinue: () => void }) {
-  const [completedLessons] = useState<number[]>(() => readProgressData('morsecodev2-completed-lessons', []))
-  const [practiceStats] = useState(() => readProgressData('morsecodev2-practice-stats', { answered: 0, correct: 0, bestStreak: 0 }))
-  const [assessmentAttempts] = useState<ProgressAttempt[]>(() => readProgressData('morsecodev2-assessment-attempts', []))
-  const [listeningAttempts] = useState<ProgressAttempt[]>(() => readProgressData('morsecodev2-listening-attempts', []))
+  const [completedLessons] = useState<number[]>(() => readProgressData('morsecodev2-completed-lessons', [], isCompletedLessons))
+  const [practiceStats] = useState(() => readProgressData('morsecodev2-practice-stats', { answered: 0, correct: 0, bestStreak: 0 }, isPracticeStats))
+  const [assessmentAttempts] = useState<ProgressAttempt[]>(() => readProgressData('morsecodev2-assessment-attempts', [], isAttemptHistory))
+  const [listeningAttempts] = useState<ProgressAttempt[]>(() => readProgressData('morsecodev2-listening-attempts', [], isAttemptHistory))
 
   const lessonPercent = Math.round((completedLessons.length / LETTER_LESSONS.length) * 100)
   const practiceAccuracy = practiceStats.answered ? Math.round((practiceStats.correct / practiceStats.answered) * 100) : 0
