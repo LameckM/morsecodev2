@@ -522,7 +522,7 @@ function PracticePage() {
   const [category, setCategory] = useState<'All' | MorseCategory>('All')
   const [mode, setMode] = useState<PracticeMode>('Decode')
   const [question, setQuestion] = useState(() => shuffled(MORSE_CHARACTERS)[0])
-  const [choices, setChoices] = useState(() => shuffled(MORSE_CHARACTERS).slice(0, 4))
+  const [choices, setChoices] = useState(() => shuffled([question, ...shuffled(MORSE_CHARACTERS.filter((item) => item.character !== question.character)).slice(0, 3)]))
   const [answer, setAnswer] = useState('')
   const [score, setScore] = useState(0)
   const [streak, setStreak] = useState(0)
