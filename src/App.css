@@ -653,3 +653,7 @@ h1 em{color:#D99ABF}.welcome-row .eyebrow,.reference-intro .eyebrow,.learn-intro
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Screen-reader-only live announcement regions */
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
