@@ -273,3 +273,81 @@ h2 { margin: 7px 0 0; font-size: 20px; letter-spacing: -.5px; font-weight: 600; 
 @media (max-width: 1050px) { .learn-layout { grid-template-columns: minmax(190px, .8fr) minmax(0, 1.6fr); } .lesson-content { padding: 20px; } }
 @media (max-width: 760px) { .learn-layout { grid-template-columns: 1fr; } .lesson-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; } .lesson-list-heading { grid-column: 1 / -1; } .lesson-list-item { padding: 8px 5px; } .lesson-list-state { display: none; } }
 @media (max-width: 440px) { .lesson-list { grid-template-columns: 1fr; } .lesson-content { padding: 17px; } .lesson-character-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .quiz-options { grid-template-columns: repeat(2, 1fr); } .learn-intro h1 { font-size: 36px; } }
+
+
+/* Midnight Memory Studio palette */
+:root {
+  --midnight-bg:#111529; --midnight-surface:#1B2139; --midnight-elevated:#252D49;
+  --midnight-text:#EDF0FF; --midnight-muted:#A5AEC9; --midnight-indigo:#929FFF;
+  --midnight-pink:#D99ABF; --midnight-border:#343D5C;
+}
+.app-shell{background:radial-gradient(ellipse at 72% 0%,#202746 0%,#111529 52%,#0D1122 100%);color:#EDF0FF}
+.sidebar{background:rgba(13,17,34,.96);border-right:1px solid #343D5C;color:#EDF0FF}
+.brand-mark{border-color:#59658F}.brand-mark span{background:#929FFF}.brand strong span{color:#D99ABF}
+.brand small,.nav-label,.eyebrow{color:#8994B8}
+.nav-item{color:#A5AEC9}.nav-item:hover{background:#252D49;color:#fff}
+.nav-item.active{background:#252D49;color:#EDF0FF;box-shadow:inset 2px 0 #929FFF}
+.nav-icon,.nav-new{color:#929FFF}
+.daily-card{background:#1B2139;border-color:#343D5C}.daily-icon{color:#D99ABF}
+.daily-card p,.profile small{color:#A5AEC9}.daily-dots i{background:#59658F}.daily-dots i:nth-child(3n){background:#929FFF}
+.profile{border-color:#343D5C}.avatar{background:#343D5C;color:#EDF0FF}.profile-menu{color:#8994B8}
+.topbar{background:rgba(17,21,41,.76);border-color:#343D5C;backdrop-filter:blur(16px)}
+.breadcrumb{color:#8994B8}.breadcrumb b{color:#59658F}.breadcrumb strong{color:#EDF0FF}
+.topbar-right{color:#A5AEC9}.status-dot{background:#929FFF;box-shadow:0 0 10px #929FFF88}.mobile-menu{color:#EDF0FF}
+h1 em{color:#D99ABF}.welcome-row .eyebrow,.reference-intro .eyebrow,.learn-intro .eyebrow,.placeholder-page .eyebrow{color:#929FFF}
+.welcome-copy,.reference-intro p,.learn-intro p,.placeholder-page p{color:#A5AEC9}
+.signal-orbit{border-color:#343D5C}.orbit-two{border-color:#252D49}
+.signal-center{background:#252D49;color:#929FFF;box-shadow:0 0 0 9px #1B2139,0 0 32px #929FFF22}
+.signal-caption{color:#8994B8}.section-heading{border-color:#343D5C}
+.section-heading .eyebrow,.panel .eyebrow{color:#8994B8}.section-note{color:#A5AEC9}
+.feature-card{color:#EDF0FF;border-color:#343D5C;background:linear-gradient(145deg,#252D49,#1B2139)}
+.feature-card:hover{box-shadow:0 12px 32px #080b1880;border-color:#59658F}
+.learn-card,.practice-card,.visualizer-card{background:linear-gradient(145deg,#252D49,#1B2139)}
+.card-icon,.practice-card .card-icon,.visualizer-card .card-icon{background:#343D5C;color:#929FFF}
+.card-index{color:#8994B8}.feature-card p{color:#A5AEC9}.card-action{color:#929FFF}
+.panel{background:#1B2139;border-color:#343D5C;color:#EDF0FF}.quiet-tag{color:#A5AEC9;background:#252D49}
+.path-row{border-color:#343D5C}.path-number{background:#343D5C;color:#929FFF}
+.path-number.muted{background:#252D49;color:#8994B8}.path-copy span,.path-lock{color:#8994B8}.path-state{color:#A5AEC9}
+.principle-panel{background:linear-gradient(145deg,#252D49,#1B2139);border-color:#343D5C}
+.principle-panel .eyebrow{color:#929FFF}.principle-symbol{color:#D99ABF}.principle-panel h3{color:#EDF0FF}
+.principle-panel p{color:#A5AEC9}.text-link{color:#929FFF}.page-footer{color:#8994B8}.page-footer b{color:#D99ABF}
+.placeholder-line{color:#929FFF}.return-button{border-color:#59658F;background:#252D49;color:#EDF0FF}
+.sidebar-scrim{background:#080b18bb}
+.reference-search{background:#1B2139;border-color:#343D5C;color:#929FFF}
+.reference-search input{color:#EDF0FF}.reference-search input::placeholder{color:#8994B8}.reference-search button{color:#A5AEC9}
+.filter-chip{border-color:#343D5C;color:#A5AEC9}.filter-chip span{color:#8994B8}
+.filter-chip:hover{border-color:#7886C4;color:#EDF0FF}.filter-chip.selected{border-color:#7886C4;background:#252D49;color:#EDF0FF}
+.filter-chip.selected span{color:#929FFF}.reference-results-heading .eyebrow,.results-count{color:#8994B8}
+.character-card{background:#1B2139;border-color:#343D5C}.character-card:hover{border-color:#7886C4;box-shadow:0 8px 24px #080b1866}
+.character-card-top,.character-index,.character-name{color:#8994B8}.character-symbol{color:#EDF0FF}
+.morse-dot,.morse-dash{background:#929FFF;box-shadow:0 0 8px #929FFF44}.character-code-text{color:#D99ABF}
+.reference-empty{border-color:#59658F;color:#A5AEC9}.reference-empty>span{color:#929FFF}
+.reference-empty p{color:#A5AEC9}.reference-empty button{border-color:#59658F;background:#252D49;color:#EDF0FF}
+.reference-note{border-color:#343D5C;background:#1B2139}.note-symbol{background:#343D5C;color:#929FFF}
+.reference-note p{color:#A5AEC9}.reference-note strong{color:#D99ABF}
+.learn-progress-panel,.lesson-list,.lesson-workspace{background:#1B2139;border-color:#343D5C;color:#EDF0FF}
+.learn-progress-copy .eyebrow,.lesson-list-heading .eyebrow,.lesson-list-state,.lesson-step,.lesson-quiz .eyebrow{color:#8994B8}
+.learn-progress-copy strong,.lesson-list-heading strong,.lesson-content h2,.quiz-heading h3{color:#EDF0FF}
+.learn-progress-copy>b{color:#929FFF}.learn-progress-track{background:#343D5C}
+.learn-progress-track span{background:linear-gradient(90deg,#7886C4,#929FFF)}
+.lesson-list-item{color:#A5AEC9}.lesson-list-item:hover:not(:disabled),.lesson-list-item.active{background:#252D49}
+.lesson-number{background:#252D49;color:#A5AEC9}.lesson-number.done{background:#343D5C;color:#929FFF}
+.lesson-list-copy small{color:#8994B8}.lesson-list-item.active .lesson-list-state{color:#929FFF}
+.lesson-kicker{color:#929FFF}.lesson-lead{color:#A5AEC9}
+.signal-lesson-card{background:#252D49;border-color:#343D5C}.signal-demo{color:#929FFF}
+.signal-lesson-card strong{color:#EDF0FF}.signal-lesson-card b,.signal-lesson-card p{color:#A5AEC9}
+.timing-note{border-color:#929FFF;background:#252D49}.timing-note strong{color:#D99ABF}
+.timing-note p,.lesson-example p{color:#A5AEC9}.lesson-example .eyebrow{color:#8994B8}
+.example-letter{color:#EDF0FF}.example-code{color:#929FFF}.example-divider{background:#343D5C}
+.lesson-primary-button{background:#7886C4;color:#111529}.lesson-primary-button:hover{background:#929FFF}
+.lesson-secondary-button{border-color:#59658F;background:#252D49;color:#EDF0FF}
+.lesson-character{background:#252D49;border-color:#343D5C}.lesson-character-letter{color:#EDF0FF}
+.lesson-character-code{color:#929FFF}.lesson-character-cue{color:#A5AEC9}
+.memory-tip{background:#252D49}.memory-tip span{color:#D99ABF}.memory-tip p{color:#A5AEC9}
+.lesson-quiz{border-color:#343D5C}.quiz-heading>span{color:#8994B8}
+.quiz-question{color:#A5AEC9}.quiz-question strong{color:#D99ABF}
+.quiz-option{border-color:#59658F;background:#252D49;color:#929FFF}
+.quiz-option:hover:not(:disabled){border-color:#929FFF;background:#343D5C}
+.quiz-feedback.good{background:#253A46;color:#B9D7E8}.quiz-feedback.retry{background:#3A2B43;color:#E8B9D5}
+.quiz-complete>strong,.course-finished{color:#929FFF!important}.quiz-complete p{color:#A5AEC9}
+.lesson-back-link{color:#A5AEC9}.lesson-back-link:hover{color:#929FFF}
