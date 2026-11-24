@@ -275,7 +275,7 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
 
   return (
     <section className="learn-page">
-      <div className="sr-only" aria-live="polite" aria-atomic="true">{feedback === 'correct' ? `Correct. ${target?.character ?? ''}.` : feedback === 'incorrect' ? `Incorrect answer for ${target?.character ?? 'this character'}. Try again.` : ''}</div>
+      <div className="sr-only">{feedback === 'correct' ? `Correct. ${target?.character ?? ''}.` : feedback === 'incorrect' ? `Incorrect answer for ${target?.character ?? 'this character'}. Try again.` : ''}</div>
       <div className="learn-intro">
         <div className="eyebrow">YOUR GUIDED COURSE</div>
         <h1>Learn it <em>step by step.</em></h1>
@@ -650,7 +650,7 @@ function PracticePage() {
 
   return (
     <section className="training-page">
-      <div className="sr-only" aria-live="polite" aria-atomic="true">{answered ? (isCorrect ? 'Correct answer.' : `Incorrect. The correct answer is ${mode === 'Decode' ? question.character : formatMorseCode(question.code)}.`) : ''}</div>
+      <div className="sr-only">{answered ? (isCorrect ? 'Correct answer.' : `Incorrect. The correct answer is ${mode === 'Decode' ? question.character : formatMorseCode(question.code)}.`) : ''}</div>
       <div className="training-intro">
         <div className="eyebrow">BUILD SPEED THROUGH REPETITION</div>
         <h1>Make recognition <em>second nature.</em></h1>
@@ -746,7 +746,7 @@ function AssessmentsPage() {
 
   return (
     <section className="training-page assessment-page">
-      <div className="sr-only" aria-live="polite" aria-atomic="true">{finished ? `Assessment complete. You scored ${score} out of ${questions.length}.` : selectedAnswer ? `Answer selected for question ${questionIndex + 1} of ${questions.length}.` : ''}</div>
+      <div className="sr-only">{finished ? `Assessment complete. You scored ${score} out of ${questions.length}.` : selectedAnswer ? `Answer selected for question ${questionIndex + 1} of ${questions.length}.` : ''}</div>
       <div className="training-intro">
         <div className="eyebrow">CHECK WHAT YOU CAN RECALL</div>
         <h1>Test your <em>Morse memory.</em></h1>
@@ -906,7 +906,7 @@ function ListeningPage() {
 
   return (
     <section className="listening-page">
-      <div className="sr-only" aria-live="polite" aria-atomic="true">{roundComplete ? `Listening round complete. You scored ${score} out of 10.` : answered ? (selectedAnswer === question.character.character ? `Correct recognition. ${question.character.character}.` : `Incorrect. The answer is ${question.character.character}.`) : ''}</div>
+      <div className="sr-only">{roundComplete ? `Listening round complete. You scored ${score} out of 10.` : answered ? (selectedAnswer === question.character.character ? `Correct recognition. ${question.character.character}.` : `Incorrect. The answer is ${question.character.character}.`) : ''}</div>
       <div className="training-intro">
         <div className="eyebrow">TRAIN YOUR EAR, NOT YOUR EYES</div>
         <h1>Hear the signal. <em>Know the code.</em></h1>
@@ -946,10 +946,10 @@ function ListeningPage() {
               const state = answered && correct ? ' correct' : answered && chosen ? ' incorrect' : ''
               return <button key={choice.character} className={'listening-answer' + state} disabled={answered} onClick={() => chooseAnswer(choice.character)}>{choice.character}</button>
             })}</div>
-            {answered ? <div className="listening-feedback" aria-live="polite" aria-atomic="true"><div><strong className={selectedAnswer === question.character.character ? 'feedback-correct' : 'feedback-incorrect'}>{selectedAnswer === question.character.character ? 'Correct recognition.' : 'Not quite. The answer is ' + question.character.character + '.'}</strong><span>Its Morse pattern: {codeText(question.character.code)}</span></div><button className="lesson-primary-button" onClick={nextQuestion}>{questionNumber === 10 ? 'Finish round' : 'Next signal'} <span>→</span></button></div> : <p className="listening-instruction">Listen as many times as you need, then choose the character. The answer and pattern will appear after your choice.</p>}
+            {answered ? <div className="listening-feedback"><div><strong className={selectedAnswer === question.character.character ? 'feedback-correct' : 'feedback-incorrect'}>{selectedAnswer === question.character.character ? 'Correct recognition.' : 'Not quite. The answer is ' + question.character.character + '.'}</strong><span>Its Morse pattern: {codeText(question.character.code)}</span></div><button className="lesson-primary-button" onClick={nextQuestion}>{questionNumber === 10 ? 'Finish round' : 'Next signal'} <span>→</span></button></div> : <p className="listening-instruction">Listen as many times as you need, then choose the character. The answer and pattern will appear after your choice.</p>}
           </>
         ) : (
-          <div className="listening-round-result" aria-live="polite" aria-atomic="true"><span className="eyebrow">YOUR LISTENING SCORE</span><strong>{score}<small> / 10</small></strong><h3>{score >= 8 ? 'Excellent listening.' : score >= 6 ? 'Good progress.' : 'Keep training your ear.'}</h3><p>{score >= 8 ? 'You are recognising the rhythm with confidence.' : 'Try a slower speed, listen carefully to each tone, and give it another round.'}</p><button className="lesson-primary-button" onClick={restartRound}>Start another round <span>↻</span></button></div>
+          <div className="listening-round-result"><span className="eyebrow">YOUR LISTENING SCORE</span><strong>{score}<small> / 10</small></strong><h3>{score >= 8 ? 'Excellent listening.' : score >= 6 ? 'Good progress.' : 'Keep training your ear.'}</h3><p>{score >= 8 ? 'You are recognising the rhythm with confidence.' : 'Try a slower speed, listen carefully to each tone, and give it another round.'}</p><button className="lesson-primary-button" onClick={restartRound}>Start another round <span>↻</span></button></div>
         )}
       </div>
 
