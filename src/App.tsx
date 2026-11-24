@@ -798,6 +798,7 @@ function createListeningQuestion(): ListeningQuestion {
 function playMorseAudio(code: string, context: AudioContext, unitMs: number, frequency: number) {
   const unit = unitMs / 1000
   let cursor = context.currentTime + 0.035
+  const oscillators: OscillatorNode[] = []
   code.split('').forEach((signal) => {
     const duration = signal === '.' ? unit : unit * 3
     const oscillator = context.createOscillator()
@@ -812,9 +813,10 @@ function playMorseAudio(code: string, context: AudioContext, unitMs: number, fre
     gain.connect(context.destination)
     oscillator.start(cursor)
     oscillator.stop(cursor + duration + 0.01)
+    oscillators.push(oscillator)
     cursor += duration + unit
   })
-  return Math.max(0, (cursor - context.currentTime) * 1000)
+  return { duration: Math.max(0, (cursor - context.currentTime) * 1000), oscillators }
 }
 
 function ListeningPage() {
@@ -823,6 +825,7 @@ function ListeningPage() {
   const [frequency, setFrequency] = useState(650)
   const [isPlaying, setIsPlaying] = useState(false)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const activeOscillatorsRef = useRef<OscillatorNode[]>([])
   const playbackTimerRef = useRef<number | null>(null)
   const [question, setQuestion] = useState<ListeningQuestion>(() => createListeningQuestion())
   const [selectedAnswer, setSelectedAnswer] = useState('')
@@ -844,13 +847,25 @@ function ListeningPage() {
     audioContextRef.current = context
     await context.resume()
     if (playbackTimerRef.current !== null) window.clearTimeout(playbackTimerRef.current)
+    activeOscillatorsRef.current.forEach((oscillator) => {
+      try { oscillator.stop() } catch { /* It may already have stopped. */ }
+    })
+    activeOscillatorsRef.current = []
     setIsPlaying(true)
-    const duration = playMorseAudio(code, context, unitMs, frequency)
-    playbackTimerRef.current = window.setTimeout(() => setIsPlaying(false), duration)
+    const playback = playMorseAudio(code, context, unitMs, frequency)
+    activeOscillatorsRef.current = playback.oscillators
+    playbackTimerRef.current = window.setTimeout(() => {
+      setIsPlaying(false)
+      activeOscillatorsRef.current = []
+    }, playback.duration)
   }
 
   useEffect(() => () => {
     if (playbackTimerRef.current !== null) window.clearTimeout(playbackTimerRef.current)
+    activeOscillatorsRef.current.forEach((oscillator) => {
+      try { oscillator.stop() } catch { /* It may already have stopped. */ }
+    })
+    activeOscillatorsRef.current = []
     void audioContextRef.current?.close()
     audioContextRef.current = null
   }, [])
@@ -933,10 +948,10 @@ function ListeningPage() {
               const state = answered && correct ? ' correct' : answered && chosen ? ' incorrect' : ''
               return <button key={choice.character} className={'listening-answer' + state} disabled={answered} onClick={() => chooseAnswer(choice.character)}>{choice.character}</button>
             })}</div>
-            {answered ? <div className="listening-feedback"><div><strong className={selectedAnswer === question.character.character ? 'feedback-correct' : 'feedback-incorrect'}>{selectedAnswer === question.character.character ? 'Correct recognition.' : 'Not quite. The answer is ' + question.character.character + '.'}</strong><span>Its Morse pattern: {codeText(question.character.code)}</span></div><button className="lesson-primary-button" onClick={nextQuestion}>{questionNumber === 10 ? 'Finish round' : 'Next signal'} <span>→</span></button></div> : <p className="listening-instruction">Listen as many times as you need, then choose the character. The answer and pattern will appear after your choice.</p>}
+            {answered ? <div className="listening-feedback" aria-live="polite" aria-atomic="true"><div><strong className={selectedAnswer === question.character.character ? 'feedback-correct' : 'feedback-incorrect'}>{selectedAnswer === question.character.character ? 'Correct recognition.' : 'Not quite. The answer is ' + question.character.character + '.'}</strong><span>Its Morse pattern: {codeText(question.character.code)}</span></div><button className="lesson-primary-button" onClick={nextQuestion}>{questionNumber === 10 ? 'Finish round' : 'Next signal'} <span>→</span></button></div> : <p className="listening-instruction">Listen as many times as you need, then choose the character. The answer and pattern will appear after your choice.</p>}
           </>
         ) : (
-          <div className="listening-round-result"><span className="eyebrow">YOUR LISTENING SCORE</span><strong>{score}<small> / 10</small></strong><h3>{score >= 8 ? 'Excellent listening.' : score >= 6 ? 'Good progress.' : 'Keep training your ear.'}</h3><p>{score >= 8 ? 'You are recognising the rhythm with confidence.' : 'Try a slower speed, listen carefully to each tone, and give it another round.'}</p><button className="lesson-primary-button" onClick={restartRound}>Start another round <span>↻</span></button></div>
+          <div className="listening-round-result" aria-live="polite" aria-atomic="true"><span className="eyebrow">YOUR LISTENING SCORE</span><strong>{score}<small> / 10</small></strong><h3>{score >= 8 ? 'Excellent listening.' : score >= 6 ? 'Good progress.' : 'Keep training your ear.'}</h3><p>{score >= 8 ? 'You are recognising the rhythm with confidence.' : 'Try a slower speed, listen carefully to each tone, and give it another round.'}</p><button className="lesson-primary-button" onClick={restartRound}>Start another round <span>↻</span></button></div>
         )}
       </div>
 
