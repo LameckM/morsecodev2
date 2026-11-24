@@ -277,6 +277,12 @@ function LearnPage() {
                           )
                         })}
                       </div>
+                      <div className="mnemonic-sequence" aria-label={studyMnemonic.map((word) => /[A-Z]/.test(word) && word === word.toUpperCase() ? 'dash' : 'dot').join(', ')}>
+                        {studyMnemonic.map((word, index) => {
+                          const isDash = /[A-Z]/.test(word) && word === word.toUpperCase()
+                          return <span className={isDash ? 'mnemonic-signal dash-signal' : 'mnemonic-signal dot-signal'} key={index}>{isDash ? '—' : '·'}</span>
+                        })}
+                      </div>
                       <span className="mnemonic-key"><b>UPPERCASE</b> = DASH <i /> <b>lowercase</b> = DOT</span>
                     </div>
                     {codeRevealed ? (
