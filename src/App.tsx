@@ -1038,6 +1038,12 @@ function App() {
     setMenuOpen(false)
   }
 
+  const getResumeLessonIndex = () => {
+    const completed = readStoredValue('morsecodev2-completed-lessons', [], isCompletedLessons)
+    const nextIndex = LETTER_LESSONS.findIndex((lesson) => !completed.includes(lesson.id))
+    return nextIndex === -1 ? LETTER_LESSONS.length - 1 : nextIndex
+  }
+
   return (
     <div className="app-shell">
       {menuOpen && <button className="sidebar-scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
@@ -1053,7 +1059,10 @@ function App() {
             <button
               className={`nav-item ${activePage === item.label ? 'active' : ''}`}
               key={item.label}
-              onClick={() => selectPage(item.label)}
+              onClick={() => {
+                if (item.label === 'Learn') setLearnStartIndex(getResumeLessonIndex())
+                selectPage(item.label)
+              }}
               aria-current={activePage === item.label ? 'page' : undefined}
             >
               <span className="nav-icon" aria-hidden="true">{item.icon}</span>
@@ -1107,7 +1116,7 @@ function App() {
               </section>
 
               <section className="feature-grid">
-                <button className="feature-card learn-card" onClick={() => { setLearnStartIndex(0); selectPage('Learn') }}>
+                <button className="feature-card learn-card" onClick={() => { setLearnStartIndex(getResumeLessonIndex()); selectPage('Learn') }}>
                   <div className="card-topline"><span className="card-icon">▤</span><span className="card-index">01 / LEARN</span></div>
                   <div><h3>Learn the language</h3><p>Start with the building blocks. Move through short, structured lessons at your own pace.</p></div>
                   <div className="card-action">Explore lessons <span>↗</span></div>
