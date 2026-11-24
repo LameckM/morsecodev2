@@ -351,3 +351,30 @@ h1 em{color:#D99ABF}.welcome-row .eyebrow,.reference-intro .eyebrow,.learn-intro
 .quiz-feedback.good{background:#253A46;color:#B9D7E8}.quiz-feedback.retry{background:#3A2B43;color:#E8B9D5}
 .quiz-complete>strong,.course-finished{color:#929FFF!important}.quiz-complete p{color:#A5AEC9}
 .lesson-back-link{color:#A5AEC9}.lesson-back-link:hover{color:#929FFF}
+
+
+/* Active-recall lesson flow */
+.study-stage { margin-top: 18px; }
+.study-stage-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.study-stage-heading .eyebrow { color:#929FFF; }
+.study-progress { color:#A5AEC9; font:10px 'DM Mono',monospace; }
+.study-card { min-height:290px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:26px 18px; border:1px solid #343D5C; border-radius:9px; background:radial-gradient(ellipse at 50% 35%,#2b3354 0%,#1B2139 72%); text-align:center; }
+.study-prompt { color:#A5AEC9; font-size:11px; }
+.study-letter { margin:25px 0; color:#EDF0FF; font-size:76px; line-height:1; font-weight:700; }
+.study-reveal { display:grid; justify-items:center; gap:10px; }
+.study-code { color:#929FFF; font:34px 'DM Mono',monospace; letter-spacing:5px; }
+.study-rhythm { color:#D99ABF; font:9px 'DM Mono',monospace; letter-spacing:2px; }
+.study-reveal p { max-width:380px; margin:3px 0 0; color:#A5AEC9; font-size:10px; line-height:1.7; }
+.study-reveal-button { padding:11px 16px; border:1px solid #7886C4; border-radius:6px; background:#252D49; color:#EDF0FF; font-size:11px; cursor:pointer; }
+.study-reveal-button:hover { background:#343D5C; border-color:#929FFF; }
+.study-reveal-button span { margin-left:10px; color:#929FFF; }
+.study-stage-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:15px; }
+.study-dots { display:flex; gap:6px; }
+.study-dots span { width:7px; height:7px; border-radius:50%; background:#343D5C; }
+.study-dots span.active { background:#929FFF; box-shadow:0 0 8px #929FFF66; }
+.study-hint { color:#8994B8; font-size:9px; }
+.recall-banner { margin-top:17px; padding:13px 15px; border:1px solid #343D5C; border-radius:7px; background:#252D49; }
+.recall-banner .eyebrow { color:#D99ABF; }
+.recall-banner p { margin:6px 0 0; color:#A5AEC9; font-size:10px; }
+.lesson-finished-panel { margin-top:22px; padding:20px; border:1px solid #343D5C; border-radius:8px; background:#252D49; }
+.lesson-finished-panel .lesson-primary-button { margin-top:10px; }
