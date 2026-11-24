@@ -18,7 +18,7 @@ const navigation: { label: Page; icon: string; description: string }[] = [
 ]
 
 type PracticeStats = { answered: number; correct: number; bestStreak: number }
-type StoredAttempt = { date: string; score: number; total: number }
+type StoredAttempt = { date: string; score: number; total: number; timestamp?: number }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -45,6 +45,7 @@ function isAttemptHistory(value: unknown): value is StoredAttempt[] {
   return Array.isArray(value) && value.every((item) =>
     isRecord(item) &&
     typeof item.date === 'string' &&
+    (item.timestamp === undefined || isNonNegativeNumber(item.timestamp)) &&
     isNonNegativeNumber(item.score) &&
     isNonNegativeNumber(item.total) &&
     item.score <= item.total
@@ -180,7 +181,7 @@ function LearnPage() {
   const [questionIndex, setQuestionIndex] = useState(0)
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('')
   const [quizChoices, setQuizChoices] = useState<(typeof MORSE_CHARACTERS)[number][]>([])
-  const [showFoundations, setShowFoundations] = useState(true)
+  const [showFoundations, setShowFoundations] = useState(initialLessonIndex === 0 && completed.length === 0)
 
   const lesson = LETTER_LESSONS[selectedLesson]
   const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
@@ -560,7 +561,7 @@ function MorseVisualizerPage() {
 
 type PracticeMode = 'Decode' | 'Encode'
 type AssessmentQuestion = { character: (typeof MORSE_CHARACTERS)[number]; choices: (typeof MORSE_CHARACTERS)[number][] }
-type AssessmentAttempt = { date: string; score: number; total: number }
+type AssessmentAttempt = StoredAttempt
 
 function shuffled<T,>(items: T[]): T[] {
   const result = [...items]
@@ -723,7 +724,7 @@ function AssessmentsPage() {
     if (!currentQuestion || !selectedAnswer) return
     const finalAnswers = [...answers, selectedAnswer]
     const finalScore = questions.reduce((total, item, index) => total + (finalAnswers[index] === item.character.code ? 1 : 0), 0)
-    const nextAttempts = [{ date: new Date().toLocaleDateString(), score: finalScore, total: questions.length }, ...attempts].slice(0, 8)
+    const now = new Date()\n    const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: questions.length }, ...attempts].slice(0, 8)
     setAnswers(finalAnswers)
     setAttempts(nextAttempts)
     writeStoredValue('morsecodev2-assessment-attempts', nextAttempts)
@@ -776,7 +777,7 @@ function AssessmentsPage() {
 
 
 type ListeningQuestion = { character: (typeof MORSE_CHARACTERS)[number]; choices: (typeof MORSE_CHARACTERS)[number][] }
-type ListeningAttempt = { date: string; score: number; total: number }
+type ListeningAttempt = StoredAttempt
 
 function shuffledListening<T,>(items: T[]): T[] {
   const result = [...items]
@@ -865,7 +866,7 @@ function ListeningPage() {
     if (!answered) return
     if (questionNumber === 10) {
       const finalScore = score
-      const nextAttempts = [{ date: new Date().toLocaleDateString(), score: finalScore, total: 10 }, ...attempts].slice(0, 8)
+      const now = new Date()\n      const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: 10 }, ...attempts].slice(0, 8)
       setAttempts(nextAttempts)
       writeStoredValue('morsecodev2-listening-attempts', nextAttempts)
       setRoundComplete(true)
@@ -943,13 +944,13 @@ function ListeningPage() {
 }
 
 
-type ProgressAttempt = { date: string; score: number; total: number }
+type ProgressAttempt = StoredAttempt
 
 function readProgressData<T,>(key: string, fallback: T, validate: (value: unknown) => value is T): T {
   return readStoredValue(key, fallback, validate)
 }
 
-function ProgressPage({ onContinue }: { onContinue: () => void }) {
+function ProgressPage({ onContinue }: { onContinue: (lessonIndex: number) => void }) {
   const [completedLessons] = useState<number[]>(() => readProgressData('morsecodev2-completed-lessons', [], isCompletedLessons))
   const [practiceStats] = useState(() => readProgressData('morsecodev2-practice-stats', { answered: 0, correct: 0, bestStreak: 0 }, isPracticeStats))
   const [assessmentAttempts] = useState<ProgressAttempt[]>(() => readProgressData('morsecodev2-assessment-attempts', [], isAttemptHistory))
@@ -970,7 +971,7 @@ function ProgressPage({ onContinue }: { onContinue: () => void }) {
   const activity = [
     ...assessmentAttempts.map((attempt) => ({ ...attempt, kind: 'Assessment' })),
     ...listeningAttempts.map((attempt) => ({ ...attempt, kind: 'Listening' })),
-  ].slice(0, 6)
+  ].sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0)).slice(0, 6)
 
   return (
     <section className="progress-page">
@@ -1001,7 +1002,7 @@ function ProgressPage({ onContinue }: { onContinue: () => void }) {
         </div>
       </div>
       <div className="progress-bottom-grid">
-        <div className="progress-panel progress-next-panel"><span className="eyebrow">YOUR NEXT STEP</span><h2>{nextLesson ? nextLesson.title : 'The alphabet is complete.'}</h2><p>{nextLesson ? nextLesson.focus : 'You have completed all seven guided letter lessons. Keep your skills sharp with practice and listening challenges.'}</p><button className="lesson-primary-button" onClick={onContinue}>Continue learning <span>→</span></button></div>
+        <div className="progress-panel progress-next-panel"><span className="eyebrow">YOUR NEXT STEP</span><h2>{nextLesson ? nextLesson.title : 'The alphabet is complete.'}</h2><p>{nextLesson ? nextLesson.focus : 'You have completed all seven guided letter lessons. Keep your skills sharp with practice and listening challenges.'}</p><button className="lesson-primary-button" onClick={() => onContinue(Math.max(0, LETTER_LESSONS.findIndex((lesson) => !completedLessons.includes(lesson.id))))}>Continue learning <span>→</span></button></div>
         <div className="progress-panel"><div className="progress-panel-heading"><div><span className="eyebrow">RECENT ACTIVITY</span><h2>Latest sessions</h2></div></div>{activity.length ? activity.map((attempt,index) => <div className="progress-activity-row" key={attempt.kind + index}><span>{attempt.kind}</span><small>{attempt.date}</small><strong>{attempt.score}/{attempt.total}</strong></div>) : <p className="progress-empty">Your completed assessments and listening rounds will appear here.</p>}</div>
       </div>
       <p className="progress-storage-note">Progress is saved locally in this browser. Clearing browser data or using another device may reset or separate these records.</p>
@@ -1011,7 +1012,7 @@ function ProgressPage({ onContinue }: { onContinue: () => void }) {
 
 function App() {
   const [activePage, setActivePage] = useState<Page>('Overview')
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)\n  const [learnStartIndex, setLearnStartIndex] = useState(0)
 
   const selectPage = (page: Page) => {
     setActivePage(page)
@@ -1087,7 +1088,7 @@ function App() {
               </section>
 
               <section className="feature-grid">
-                <button className="feature-card learn-card" onClick={() => selectPage('Learn')}>
+                <button className="feature-card learn-card" onClick={() => { setLearnStartIndex(0); selectPage('Learn') }}>
                   <div className="card-topline"><span className="card-icon">▤</span><span className="card-index">01 / LEARN</span></div>
                   <div><h3>Learn the language</h3><p>Start with the building blocks. Move through short, structured lessons at your own pace.</p></div>
                   <div className="card-action">Explore lessons <span>↗</span></div>
@@ -1123,7 +1124,7 @@ function App() {
           ) : activePage === 'Reference' ? (
             <ReferencePage />
           ) : activePage === 'Learn' ? (
-            <LearnPage />
+            <LearnPage key={learnStartIndex} initialLessonIndex={learnStartIndex} />
           ) : activePage === 'Practice' ? (
             <PracticePage />
           ) : activePage === 'Listening' ? (
@@ -1131,7 +1132,7 @@ function App() {
           ) : activePage === 'Assessments' ? (
             <AssessmentsPage />
           ) : activePage === 'Progress' ? (
-            <ProgressPage onContinue={() => selectPage('Learn')} />
+            <ProgressPage onContinue={(index) => { setLearnStartIndex(index); selectPage('Learn') }} />
           ) : activePage === 'Morse Visualizer' ? (
             <MorseVisualizerPage />
           ) : (
