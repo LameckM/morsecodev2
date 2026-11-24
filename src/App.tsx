@@ -724,7 +724,8 @@ function AssessmentsPage() {
     if (!currentQuestion || !selectedAnswer) return
     const finalAnswers = [...answers, selectedAnswer]
     const finalScore = questions.reduce((total, item, index) => total + (finalAnswers[index] === item.character.code ? 1 : 0), 0)
-    const now = new Date()\n    const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: questions.length }, ...attempts].slice(0, 8)
+    const now = new Date()
+    const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: questions.length }, ...attempts].slice(0, 8)
     setAnswers(finalAnswers)
     setAttempts(nextAttempts)
     writeStoredValue('morsecodev2-assessment-attempts', nextAttempts)
@@ -866,7 +867,8 @@ function ListeningPage() {
     if (!answered) return
     if (questionNumber === 10) {
       const finalScore = score
-      const now = new Date()\n      const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: 10 }, ...attempts].slice(0, 8)
+      const now = new Date()
+      const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: 10 }, ...attempts].slice(0, 8)
       setAttempts(nextAttempts)
       writeStoredValue('morsecodev2-listening-attempts', nextAttempts)
       setRoundComplete(true)
@@ -1012,7 +1014,8 @@ function ProgressPage({ onContinue }: { onContinue: (lessonIndex: number) => voi
 
 function App() {
   const [activePage, setActivePage] = useState<Page>('Overview')
-  const [menuOpen, setMenuOpen] = useState(false)\n  const [learnStartIndex, setLearnStartIndex] = useState(0)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [learnStartIndex, setLearnStartIndex] = useState(0)
 
   const selectPage = (page: Page) => {
     setActivePage(page)
