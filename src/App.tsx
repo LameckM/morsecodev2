@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import './App.css'
+import { MORSE_CHARACTERS, type MorseCategory } from './data/morseCode'
 
 type Page = 'Overview' | 'Learn' | 'Practice' | 'Morse Visualizer' | 'Reference' | 'Progress'
 
@@ -11,6 +12,101 @@ const navigation: { label: Page; icon: string; description: string }[] = [
   { label: 'Reference', icon: '▦', description: 'Letters, numbers and symbols' },
   { label: 'Progress', icon: '↗', description: 'Your learning journey' },
 ]
+
+
+function ReferencePage() {
+  const [category, setCategory] = useState<'All' | MorseCategory>('All')
+  const [search, setSearch] = useState('')
+  const categories: ('All' | MorseCategory)[] = ['All', 'Letter', 'Number', 'Punctuation']
+
+  const filteredCharacters = MORSE_CHARACTERS.filter((item) => {
+    const matchesCategory = category === 'All' || item.category === category
+    const term = search.trim().toLowerCase()
+    const matchesSearch = !term ||
+      item.character.toLowerCase().includes(term) ||
+      item.code.includes(term) ||
+      item.name.toLowerCase().includes(term)
+    return matchesCategory && matchesSearch
+  })
+
+  const counts = {
+    All: MORSE_CHARACTERS.length,
+    Letter: MORSE_CHARACTERS.filter((item) => item.category === 'Letter').length,
+    Number: MORSE_CHARACTERS.filter((item) => item.category === 'Number').length,
+    Punctuation: MORSE_CHARACTERS.filter((item) => item.category === 'Punctuation').length,
+  }
+
+  return (
+    <section className="reference-page">
+      <div className="reference-intro">
+        <div className="eyebrow">THE INTERNATIONAL MORSE CODE</div>
+        <h1>Know your <em>signals.</em></h1>
+        <p>One character, one pattern. Explore the standard code for letters, numbers and common punctuation.</p>
+      </div>
+
+      <div className="reference-toolbar">
+        <label className="reference-search">
+          <span aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search a character, name or code..."
+            aria-label="Search Morse code reference"
+          />
+          {search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search">×</button>}
+        </label>
+        <div className="reference-filters" role="group" aria-label="Filter by category">
+          {categories.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={category === item ? 'filter-chip selected' : 'filter-chip'}
+              onClick={() => setCategory(item)}
+              aria-pressed={category === item}
+            >
+              {item === 'All' ? 'All' : item === 'Letter' ? 'Letters' : item === 'Number' ? 'Numbers' : 'Punctuation'}
+              <span>{counts[item]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="reference-results-heading">
+        <div><span className="eyebrow">REFERENCE LIBRARY</span><h2>{category === 'All' ? 'All characters' : category === 'Letter' ? 'Letters' : category === 'Number' ? 'Numbers' : 'Punctuation'}</h2></div>
+        <span className="results-count">{filteredCharacters.length} {filteredCharacters.length === 1 ? 'RESULT' : 'RESULTS'}</span>
+      </div>
+
+      {filteredCharacters.length > 0 ? (
+        <div className="character-grid">
+          {filteredCharacters.map((item) => (
+            <article className="character-card" key={item.character}>
+              <div className="character-card-top"><span>{item.category.toUpperCase()}</span><span className="character-index">{item.code.length} {item.code.length === 1 ? 'SIGN' : 'SIGNS'}</span></div>
+              <div className="character-symbol">{item.character === ' ' ? 'SPACE' : item.character}</div>
+              <div className="character-name">{item.name}</div>
+              <div className="character-code" aria-label={item.code.split('').map((sign) => sign === '.' ? 'dot' : 'dash').join(', ')}>
+                {item.code.split('').map((sign, index) => (
+                  <span className={sign === '.' ? 'morse-dot' : 'morse-dash'} key={index} />
+                ))}
+              </div>
+              <div className="character-code-text">{item.code.replaceAll('.', '·').replaceAll('-', '−')}</div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="reference-empty">
+          <span>⌕</span><strong>No matching characters</strong><p>Try another letter, number, punctuation mark or Morse pattern.</p>
+          <button type="button" onClick={() => { setSearch(''); setCategory('All') }}>Clear filters</button>
+        </div>
+      )}
+
+      <div className="reference-note">
+        <span className="note-symbol">i</span>
+        <p><strong>Reading the code:</strong> A dot (·) is a short signal. A dash (−) is a signal three times as long. The spaces between signals are just as important as the signals themselves.</p>
+      </div>
+    </section>
+  )
+}
 
 function App() {
   const [activePage, setActivePage] = useState<Page>('Overview')
@@ -123,6 +219,8 @@ function App() {
                 </div>
               </section>
             </>
+          ) : activePage === 'Reference' ? (
+            <ReferencePage />
           ) : (
             <section className="placeholder-page">
               <div className="eyebrow">MORSECODE LEARNING STUDIO</div>
