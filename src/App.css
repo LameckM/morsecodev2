@@ -646,3 +646,12 @@ h1 em{color:#D99ABF}.welcome-row .eyebrow,.reference-intro .eyebrow,.learn-intro
 .progress-storage-note { margin:13px 2px; }
 @media (max-width:700px) { .progress-main-grid,.progress-bottom-grid { grid-template-columns:1fr; } }
 @media (max-width:460px) { .progress-overview-grid { grid-template-columns:1fr; gap:8px; } .progress-stat-card { grid-template-columns:1fr auto; align-items:center; padding:13px; } .progress-stat-card>.eyebrow,.progress-stat-card>span:last-child { grid-column:1; } .progress-stat-card>strong { grid-column:2; grid-row:1/3; } .progress-panel { padding:14px; } .progress-lesson-row { grid-template-columns:25px minmax(0,1fr); } .progress-state { grid-column:2; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
