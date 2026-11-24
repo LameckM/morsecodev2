@@ -18,7 +18,7 @@ const navigation: { label: Page; icon: string; description: string }[] = [
 ]
 
 type PracticeStats = { answered: number; correct: number; bestStreak: number }
-type StoredAttempt = { date: string; score: number; total: number; timestamp?: number }
+type StoredAttempt = { date: string; score: number; total: number; timestamp?: number; attemptNumber?: number }
 
 function formatMorseCode(code: string): string {
   return code.replaceAll('.', '·').replaceAll('-', '−')
@@ -30,6 +30,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNonNegativeNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return Number.isInteger(value) && isNonNegativeNumber(value)
 }
 
 function isCompletedLessons(value: unknown): value is number[] {
@@ -50,6 +54,7 @@ function isAttemptHistory(value: unknown): value is StoredAttempt[] {
     isRecord(item) &&
     typeof item.date === 'string' &&
     (item.timestamp === undefined || isNonNegativeNumber(item.timestamp)) &&
+    (item.attemptNumber === undefined || isNonNegativeInteger(item.attemptNumber)) &&
     isNonNegativeNumber(item.score) &&
     isNonNegativeNumber(item.total) &&
     item.score <= item.total
@@ -734,7 +739,9 @@ function AssessmentsPage() {
     const finalAnswers = [...answers, selectedAnswer]
     const finalScore = questions.reduce((total, item, index) => total + (finalAnswers[index] === item.character.code ? 1 : 0), 0)
     const now = new Date()
-    const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: questions.length }, ...attempts].slice(0, 8)
+    const attemptNumber = readStoredValue('morsecodev2-assessment-attempt-count', 0, isNonNegativeInteger) + 1
+    writeStoredValue('morsecodev2-assessment-attempt-count', attemptNumber)
+    const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: questions.length, attemptNumber }, ...attempts].slice(0, 8)
     setAnswers(finalAnswers)
     setAttempts(nextAttempts)
     writeStoredValue('morsecodev2-assessment-attempts', nextAttempts)
@@ -780,7 +787,7 @@ function AssessmentsPage() {
       )}
       <div className="assessment-history">
         <div className="assessment-history-heading"><span className="eyebrow">YOUR RECENT ATTEMPTS</span><strong>Best score: {attempts.length ? bestScore + ' / 10' : '—'}</strong></div>
-        {attempts.length ? attempts.slice(0, 5).map((attempt, index) => <div className="assessment-history-row" key={index}><span>Attempt {attempts.length - index}</span><span>{attempt.date}</span><strong>{attempt.score} / {attempt.total}</strong></div>) : <p>No attempts yet. Your results will appear here after your first assessment.</p>}
+        {attempts.length ? attempts.slice(0, 5).map((attempt, index) => <div className="assessment-history-row" key={index}><span>Attempt {attempt.attemptNumber ?? attempts.length - index}</span><span>{attempt.date}</span><strong>{attempt.score} / {attempt.total}</strong></div>) : <p>No attempts yet. Your results will appear here after your first assessment.</p>}
       </div>
     </section>
   )
@@ -884,7 +891,9 @@ function ListeningPage() {
     if (questionNumber === 10) {
       const finalScore = score
       const now = new Date()
-      const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: 10 }, ...attempts].slice(0, 8)
+      const attemptNumber = readStoredValue('morsecodev2-listening-attempt-count', 0, isNonNegativeInteger) + 1
+      writeStoredValue('morsecodev2-listening-attempt-count', attemptNumber)
+      const nextAttempts = [{ date: now.toLocaleDateString(), timestamp: now.getTime(), score: finalScore, total: 10, attemptNumber }, ...attempts].slice(0, 8)
       setAttempts(nextAttempts)
       writeStoredValue('morsecodev2-listening-attempts', nextAttempts)
       setRoundComplete(true)
@@ -957,7 +966,7 @@ function ListeningPage() {
         )}
       </div>
 
-      <div className="listening-history"><div className="assessment-history-heading"><span className="eyebrow">RECENT LISTENING ROUNDS</span><strong>Best score: {attempts.length ? bestScore + ' / 10' : '—'}</strong></div>{attempts.length ? attempts.slice(0, 5).map((attempt, index) => <div className="assessment-history-row" key={index}><span>Round {attempts.length - index}</span><span>{attempt.date}</span><strong>{attempt.score} / {attempt.total}</strong></div>) : <p>No completed listening rounds yet.</p>}</div>
+      <div className="listening-history"><div className="assessment-history-heading"><span className="eyebrow">RECENT LISTENING ROUNDS</span><strong>Best score: {attempts.length ? bestScore + ' / 10' : '—'}</strong></div>{attempts.length ? attempts.slice(0, 5).map((attempt, index) => <div className="assessment-history-row" key={index}><span>Round {attempt.attemptNumber ?? attempts.length - index}</span><span>{attempt.date}</span><strong>{attempt.score} / {attempt.total}</strong></div>) : <p>No completed listening rounds yet.</p>}</div>
     </section>
   )
 }
