@@ -803,6 +803,7 @@ function ListeningPage() {
   useEffect(() => () => {
     if (playbackTimerRef.current !== null) window.clearTimeout(playbackTimerRef.current)
     void audioContextRef.current?.close()
+    audioContextRef.current = null
   }, [])
 
   const chooseAnswer = (character: string) => {
