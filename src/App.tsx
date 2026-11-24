@@ -4,12 +4,13 @@ import { MORSE_CHARACTERS, type MorseCategory } from './data/morseCode'
 import { LETTER_LESSONS } from './data/lessons'
 import { LETTER_MNEMONICS } from './data/mnemonics'
 
-type Page = 'Overview' | 'Learn' | 'Practice' | 'Morse Visualizer' | 'Reference' | 'Progress'
+type Page = 'Overview' | 'Learn' | 'Practice' | 'Assessments' | 'Morse Visualizer' | 'Reference' | 'Progress'
 
 const navigation: { label: Page; icon: string; description: string }[] = [
   { label: 'Overview', icon: '◫', description: 'Your learning dashboard' },
   { label: 'Learn', icon: '▤', description: 'Build your Morse foundations' },
   { label: 'Practice', icon: '⌁', description: 'Train your recognition' },
+  { label: 'Assessments', icon: '✓', description: 'Measure your recall' },
   { label: 'Morse Visualizer', icon: '◉', description: 'See and hear Morse signals' },
   { label: 'Reference', icon: '▦', description: 'Letters, numbers and symbols' },
   { label: 'Progress', icon: '↗', description: 'Your learning journey' },
@@ -496,6 +497,215 @@ function MorseVisualizerPage() {
   )
 }
 
+
+type PracticeMode = 'Decode' | 'Encode'
+type AssessmentQuestion = { character: (typeof MORSE_CHARACTERS)[number]; choices: (typeof MORSE_CHARACTERS)[number][] }
+type AssessmentAttempt = { date: string; score: number; total: number }
+
+function shuffled<T,>(items: T[]): T[] {
+  const result = [...items]
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[result[index], result[swapIndex]] = [result[swapIndex], result[index]]
+  }
+  return result
+}
+
+function makeAssessmentQuestions(): AssessmentQuestion[] {
+  return shuffled(MORSE_CHARACTERS).slice(0, 10).map((character) => ({
+    character,
+    choices: shuffled([character, ...shuffled(MORSE_CHARACTERS.filter((item) => item.character !== character)).slice(0, 3)]),
+  }))
+}
+
+function PracticePage() {
+  const [category, setCategory] = useState<'All' | MorseCategory>('All')
+  const [mode, setMode] = useState<PracticeMode>('Decode')
+  const [question, setQuestion] = useState(() => shuffled(MORSE_CHARACTERS)[0])
+  const [choices, setChoices] = useState(() => shuffled(MORSE_CHARACTERS).slice(0, 4))
+  const [answer, setAnswer] = useState('')
+  const [score, setScore] = useState(0)
+  const [streak, setStreak] = useState(0)
+  const [answered, setAnswered] = useState(false)
+
+  const pool = category === 'All' ? MORSE_CHARACTERS : MORSE_CHARACTERS.filter((item) => item.category === category)
+
+  const createQuestion = (nextCategory = category, nextMode = mode) => {
+    const nextPool = nextCategory === 'All' ? MORSE_CHARACTERS : MORSE_CHARACTERS.filter((item) => item.category === nextCategory)
+    const nextCharacter = shuffled(nextPool)[0]
+    const distractors = shuffled(nextPool.filter((item) => item.character !== nextCharacter.character)).slice(0, 3)
+    setQuestion(nextCharacter)
+    setChoices(shuffled([nextCharacter, ...distractors]))
+    setAnswer('')
+    setAnswered(false)
+    if (nextMode !== mode) setMode(nextMode)
+  }
+
+  const selectCategory = (value: 'All' | MorseCategory) => {
+    setCategory(value)
+    setScore(0)
+    setStreak(0)
+    createQuestion(value, mode)
+  }
+
+  const selectMode = (value: PracticeMode) => {
+    setScore(0)
+    setStreak(0)
+    createQuestion(category, value)
+  }
+
+  const submitAnswer = (value: string) => {
+    if (answered) return
+    setAnswer(value)
+    setAnswered(true)
+    const correctValue = mode === 'Decode' ? question.character : question.code
+    if (value === correctValue) {
+      setScore((current) => current + 1)
+      setStreak((current) => current + 1)
+    } else {
+      setStreak(0)
+    }
+  }
+
+  const correctValue = mode === 'Decode' ? question.character : question.code
+  const isCorrect = answer === correctValue
+  const displayCode = (code: string) => code.replaceAll('.', '·').replaceAll('-', '−')
+
+  return (
+    <section className="training-page">
+      <div className="training-intro">
+        <div className="eyebrow">BUILD SPEED THROUGH REPETITION</div>
+        <h1>Make recognition <em>second nature.</em></h1>
+        <p>Practise one signal at a time. Switch between decoding Morse and encoding characters, then build a steady streak.</p>
+      </div>
+      <div className="training-toolbar">
+        <div className="training-filter-group">
+          <span className="eyebrow">CHARACTER SET</span>
+          <div className="training-chips">
+            {(['All', 'Letter', 'Number', 'Punctuation'] as const).map((item) => (
+              <button key={item} className={category === item ? 'training-chip active' : 'training-chip'} onClick={() => selectCategory(item)}>{item === 'All' ? 'Everything' : item === 'Letter' ? 'Letters' : item === 'Number' ? 'Numbers' : 'Punctuation'}</button>
+            ))}
+          </div>
+        </div>
+        <div className="training-filter-group">
+          <span className="eyebrow">PRACTICE MODE</span>
+          <div className="training-chips">
+            {(['Decode', 'Encode'] as const).map((item) => <button key={item} className={mode === item ? 'training-chip active' : 'training-chip'} onClick={() => selectMode(item)}>{item}</button>)}
+          </div>
+        </div>
+      </div>
+      <div className="training-stats">
+        <div><span className="eyebrow">CORRECT ANSWERS</span><strong>{score}</strong></div>
+        <div><span className="eyebrow">CURRENT STREAK</span><strong>{streak} <small>in a row</small></strong></div>
+        <div><span className="eyebrow">AVAILABLE CHARACTERS</span><strong>{pool.length}</strong></div>
+      </div>
+      <div className="practice-card">
+        <div className="practice-card-heading"><span className="eyebrow">{mode === 'Decode' ? 'DECODE THE SIGNAL' : 'BUILD THE SIGNAL'}</span><span className="practice-counter">PRACTICE / OPEN SESSION</span></div>
+        <div className="practice-prompt">{mode === 'Decode' ? 'Which character does this pattern represent?' : 'Choose the Morse pattern for this character.'}</div>
+        <div className={mode === 'Decode' ? 'practice-target code-target' : 'practice-target letter-target'}>{mode === 'Decode' ? displayCode(question.code) : question.character}</div>
+        <div className="practice-options">
+          {choices.map((choice) => {
+            const value = mode === 'Decode' ? choice.character : choice.code
+            const isSelected = answer === value
+            const isAnswer = correctValue === value
+            const stateClass = answered && isAnswer ? ' correct' : answered && isSelected ? ' incorrect' : ''
+            return <button key={choice.character} className={'practice-option' + stateClass} disabled={answered} onClick={() => submitAnswer(value)}>{mode === 'Decode' ? choice.character : displayCode(choice.code)}</button>
+          })}
+        </div>
+        {answered ? (
+          <div className="practice-feedback">
+            <p className={isCorrect ? 'feedback-correct' : 'feedback-incorrect'}>{isCorrect ? 'Correct. Nice recognition.' : 'Not quite. The correct answer is ' + (mode === 'Decode' ? question.character : displayCode(question.code)) + '.'}</p>
+            <button className="lesson-primary-button" onClick={() => createQuestion()}>Next question <span>→</span></button>
+          </div>
+        ) : <p className="practice-hint">Choose an answer to reveal feedback. No hints are shown before you answer.</p>}
+      </div>
+      <div className="training-note"><strong>Training tip</strong><span>Say the rhythm out loud. For example, · − is “dit-dah”. Connect the sound and the pattern instead of memorising a picture.</span></div>
+    </section>
+  )
+}
+
+function AssessmentsPage() {
+  const [questions, setQuestions] = useState<AssessmentQuestion[]>([])
+  const [questionIndex, setQuestionIndex] = useState(0)
+  const [selectedAnswer, setSelectedAnswer] = useState('')
+  const [answers, setAnswers] = useState<string[]>([])
+  const [finished, setFinished] = useState(false)
+  const [attempts, setAttempts] = useState<AssessmentAttempt[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('morsecodev2-assessment-attempts') ?? '[]') as AssessmentAttempt[]
+    } catch {
+      return []
+    }
+  })
+
+  const startAssessment = () => {
+    setQuestions(makeAssessmentQuestions())
+    setQuestionIndex(0)
+    setSelectedAnswer('')
+    setAnswers([])
+    setFinished(false)
+  }
+
+  const currentQuestion = questions[questionIndex]
+  const score = questions.reduce((total, item, index) => total + (answers[index] === item.character.code ? 1 : 0), 0)
+  const percent = questions.length ? Math.round((score / questions.length) * 100) : 0
+  const bestScore = attempts.reduce((best, item) => Math.max(best, item.score), 0)
+
+  const submitAssessment = () => {
+    if (!currentQuestion || !selectedAnswer) return
+    const finalAnswers = [...answers, selectedAnswer]
+    const finalScore = questions.reduce((total, item, index) => total + (finalAnswers[index] === item.character.code ? 1 : 0), 0)
+    const nextAttempts = [{ date: new Date().toLocaleDateString(), score: finalScore, total: questions.length }, ...attempts].slice(0, 8)
+    setAnswers(finalAnswers)
+    setAttempts(nextAttempts)
+    localStorage.setItem('morsecodev2-assessment-attempts', JSON.stringify(nextAttempts))
+    setFinished(true)
+  }
+
+  const nextQuestion = () => {
+    if (!selectedAnswer) return
+    setAnswers((current) => [...current, selectedAnswer])
+    setSelectedAnswer('')
+    setQuestionIndex((current) => current + 1)
+  }
+
+  return (
+    <section className="training-page assessment-page">
+      <div className="training-intro">
+        <div className="eyebrow">CHECK WHAT YOU CAN RECALL</div>
+        <h1>Test your <em>Morse memory.</em></h1>
+        <p>A focused ten-question assessment. No mnemonic phrases, no hints and no answer reveals until you submit.</p>
+      </div>
+      {questions.length === 0 ? (
+        <div className="assessment-start-card">
+          <div className="assessment-start-mark">10</div>
+          <div><span className="eyebrow">THE KNOWLEDGE CHECK</span><h2>One test. Ten questions.</h2><p>Questions are drawn from letters, numbers and punctuation. Each attempt uses a fresh set of characters.</p></div>
+          <button className="lesson-primary-button" onClick={startAssessment}>Begin assessment <span>→</span></button>
+        </div>
+      ) : finished ? (
+        <div className="assessment-results">
+          <div className="assessment-result-top"><span className="eyebrow">ASSESSMENT COMPLETE</span><strong>{percent}<small>%</small></strong><h2>{score} out of {questions.length} correct</h2><p>{percent >= 80 ? 'Strong recall. You are building reliable recognition.' : percent >= 60 ? 'Good progress. Review the patterns you missed and try again.' : 'Keep practising. Revisit the reference and learning lessons, then try another assessment.'}</p></div>
+          <div className="assessment-review"><div className="eyebrow">ANSWER REVIEW</div>{questions.map((item, index) => { const correct = answers[index] === item.character.code; return <div className="assessment-review-row" key={item.character.character}><span className={correct ? 'review-status good' : 'review-status bad'}>{correct ? '✓' : '×'}</span><strong>{item.character.character}</strong><span>{item.character.code.replaceAll('.', '·').replaceAll('-', '−')}</span><small>{correct ? 'CORRECT' : 'MISSED'}</small></div> })}</div>
+          <button className="lesson-primary-button" onClick={startAssessment}>Try another assessment <span>↻</span></button>
+        </div>
+      ) : (
+        <div className="assessment-test-card">
+          <div className="assessment-test-heading"><span className="eyebrow">QUESTION {questionIndex + 1} OF {questions.length}</span><span>{Math.round((questionIndex / questions.length) * 100)}% COMPLETE</span></div>
+          <div className="assessment-progress"><span style={{ width: ((questionIndex / questions.length) * 100) + '%' }} /></div>
+          <p className="assessment-question-prompt">Which Morse pattern belongs to this character?</p>
+          <strong className="assessment-character">{currentQuestion.character.character}</strong>
+          <div className="assessment-options">{currentQuestion.choices.map((choice) => <button key={choice.character} className={selectedAnswer === choice.code ? 'assessment-option selected' : 'assessment-option'} onClick={() => setSelectedAnswer(choice.code)}>{choice.code.replaceAll('.', '·').replaceAll('-', '−')}</button>)}</div>
+          <div className="assessment-test-footer"><span>{selectedAnswer ? 'Answer recorded. You can still change it.' : 'Select one answer to continue.'}</span>{questionIndex < questions.length - 1 ? <button className="lesson-primary-button" disabled={!selectedAnswer} onClick={nextQuestion}>Next question <span>→</span></button> : <button className="lesson-primary-button" disabled={!selectedAnswer} onClick={submitAssessment}>Submit assessment <span>✓</span></button>}</div>
+        </div>
+      )}
+      <div className="assessment-history">
+        <div className="assessment-history-heading"><span className="eyebrow">YOUR RECENT ATTEMPTS</span><strong>Best score: {attempts.length ? bestScore + ' / 10' : '—'}</strong></div>
+        {attempts.length ? attempts.slice(0, 5).map((attempt, index) => <div className="assessment-history-row" key={index}><span>Attempt {attempts.length - index}</span><span>{attempt.date}</span><strong>{attempt.score} / {attempt.total}</strong></div>) : <p>No attempts yet. Your results will appear here after your first assessment.</p>}
+      </div>
+    </section>
+  )
+}
+
 function App() {
   const [activePage, setActivePage] = useState<Page>('Overview')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -525,7 +735,7 @@ function App() {
             >
               <span className="nav-icon" aria-hidden="true">{item.icon}</span>
               <span>{item.label}</span>
-              {item.label === 'Morse Visualizer' && <span className="nav-new">TOOL</span>}
+              {item.label === 'Morse Visualizer' && <span className="nav-new">TOOL</span>}{item.label === 'Assessments' && <span className="nav-new">TEST</span>}
             </button>
           ))}
         </nav>
@@ -611,6 +821,10 @@ function App() {
             <ReferencePage />
           ) : activePage === 'Learn' ? (
             <LearnPage />
+          ) : activePage === 'Practice' ? (
+            <PracticePage />
+          ) : activePage === 'Assessments' ? (
+            <AssessmentsPage />
           ) : activePage === 'Morse Visualizer' ? (
             <MorseVisualizerPage />
           ) : (
