@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { MORSE_CHARACTERS, type MorseCategory } from './data/morseCode'
 import { LETTER_LESSONS } from './data/lessons'
@@ -332,12 +332,31 @@ function MorseVisualizerPage() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [speed, setSpeed] = useState(900)
+  const audioContextRef = useRef<AudioContext | null>(null)
 
   const phrase = LETTER_MNEMONICS[selectedLetter] ?? []
   const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
   const selectedCharacter = alphabet.find((item) => item.character === selectedLetter)
   const signalForWord = (word: string) => /[A-Z]/.test(word) && word === word.toUpperCase() ? '−' : '·'
   const activeWord = phrase[activeIndex]
+
+  const playSignal = (word: string, context: AudioContext) => {
+    const oscillator = context.createOscillator()
+    const gain = context.createGain()
+    const duration = signalForWord(word) === '−' ? 0.36 : 0.12
+    const startAt = context.currentTime
+
+    oscillator.type = 'sine'
+    oscillator.frequency.setValueAtTime(650, startAt)
+    gain.gain.setValueAtTime(0.0001, startAt)
+    gain.gain.exponentialRampToValueAtTime(0.16, startAt + 0.01)
+    gain.gain.setValueAtTime(0.16, startAt + duration - 0.01)
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration)
+    oscillator.connect(gain)
+    gain.connect(context.destination)
+    oscillator.start(startAt)
+    oscillator.stop(startAt + duration)
+  }
 
   useEffect(() => {
     if (!isPlaying) return
@@ -347,7 +366,10 @@ function MorseVisualizerPage() {
           setIsPlaying(false)
           return current
         }
-        return current + 1
+        const nextIndex = current + 1
+        const context = audioContextRef.current
+        if (context && phrase[nextIndex]) playSignal(phrase[nextIndex], context)
+        return nextIndex
       })
     }, speed)
     return () => window.clearInterval(timer)
@@ -357,6 +379,22 @@ function MorseVisualizerPage() {
     setSelectedLetter(letter)
     setActiveIndex(0)
     setIsPlaying(false)
+  }
+
+  const startPlayback = () => {
+    if (isPlaying) {
+      setIsPlaying(false)
+      return
+    }
+
+    const context = audioContextRef.current ?? new AudioContext()
+    audioContextRef.current = context
+    void context.resume()
+
+    const startIndex = activeIndex === phrase.length - 1 ? 0 : activeIndex
+    setActiveIndex(startIndex)
+    if (phrase[startIndex]) playSignal(phrase[startIndex], context)
+    setIsPlaying(true)
   }
 
   const restart = () => {
@@ -429,10 +467,7 @@ function MorseVisualizerPage() {
           <div className="visualizer-controls">
             <div className="visualizer-playback">
               <button type="button" onClick={restart} aria-label="Restart animation">↺</button>
-              <button type="button" className="visualizer-play-button" onClick={() => {
-                if (activeIndex === phrase.length - 1 && !isPlaying) setActiveIndex(0)
-                setIsPlaying((playing) => !playing)
-              }}>{isPlaying ? 'Ⅱ Pause' : '▶ Play phrase'}</button>
+              <button type="button" className="visualizer-play-button" onClick={startPlayback}>{isPlaying ? 'Ⅱ Pause' : '▶ Play phrase'}</button>
               <button type="button" onClick={() => step(-1)} disabled={activeIndex === 0} aria-label="Previous syllable">←</button>
               <button type="button" onClick={() => step(1)} disabled={activeIndex === phrase.length - 1} aria-label="Next syllable">→</button>
             </div>
