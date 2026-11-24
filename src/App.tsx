@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { MORSE_CHARACTERS, type MorseCategory } from './data/morseCode'
 import { LETTER_LESSONS } from './data/lessons'
@@ -395,7 +395,7 @@ function MorseVisualizerPage() {
   const [speed, setSpeed] = useState(900)
   const audioContextRef = useRef<AudioContext | null>(null)
 
-  const phrase = LETTER_MNEMONICS[selectedLetter] ?? []
+  const phrase = useMemo(() => LETTER_MNEMONICS[selectedLetter] ?? [], [selectedLetter])
   const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
   const selectedCharacter = alphabet.find((item) => item.character === selectedLetter)
   const signalForWord = (word: string) => /[A-Z]/.test(word) && word === word.toUpperCase() ? '−' : '·'
