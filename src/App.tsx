@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import { MORSE_CHARACTERS, type MorseCategory } from './data/morseCode'
 import { LETTER_LESSONS } from './data/lessons'
@@ -326,6 +326,134 @@ function LearnPage() {
   )
 }
 
+
+function MorseVisualizerPage() {
+  const [selectedLetter, setSelectedLetter] = useState('A')
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [speed, setSpeed] = useState(900)
+
+  const phrase = LETTER_MNEMONICS[selectedLetter] ?? []
+  const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
+  const selectedCharacter = alphabet.find((item) => item.character === selectedLetter)
+  const signalForWord = (word: string) => /[A-Z]/.test(word) && word === word.toUpperCase() ? '−' : '·'
+  const visualPattern = phrase.map(signalForWord).join(' ')
+  const activeWord = phrase[activeIndex]
+
+  useEffect(() => {
+    if (!isPlaying) return
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => {
+        if (current >= phrase.length - 1) {
+          setIsPlaying(false)
+          return current
+        }
+        return current + 1
+      })
+    }, speed)
+    return () => window.clearInterval(timer)
+  }, [isPlaying, phrase.length, speed])
+
+  const chooseLetter = (letter: string) => {
+    setSelectedLetter(letter)
+    setActiveIndex(0)
+    setIsPlaying(false)
+  }
+
+  const restart = () => {
+    setIsPlaying(false)
+    setActiveIndex(0)
+  }
+
+  const step = (direction: -1 | 1) => {
+    setIsPlaying(false)
+    setActiveIndex((current) => Math.max(0, Math.min(phrase.length - 1, current + direction)))
+  }
+
+  return (
+    <section className="mnemonic-visualizer-page">
+      <div className="visualizer-intro">
+        <div className="eyebrow">INTERACTIVE MNEMONIC EXPLORER</div>
+        <h1>See the rhythm <em>come alive.</em></h1>
+        <p>Choose a letter, follow its memory phrase and watch each syllable turn into a dot or dash.</p>
+      </div>
+
+      <div className="visualizer-layout">
+        <aside className="visualizer-letter-panel">
+          <div className="visualizer-panel-heading"><span className="eyebrow">THE ALPHABET</span><strong>Choose a letter</strong></div>
+          <div className="visualizer-letter-grid">
+            {alphabet.map((item) => (
+              <button key={item.character} className={selectedLetter === item.character ? 'visualizer-letter-button active' : 'visualizer-letter-button'} onClick={() => chooseLetter(item.character)} aria-pressed={selectedLetter === item.character}>{item.character}</button>
+            ))}
+          </div>
+        </aside>
+
+        <div className="visualizer-main-panel">
+          <div className="visualizer-character-heading">
+            <div><span className="eyebrow">SELECTED CHARACTER</span><strong>{selectedLetter}</strong></div>
+            <div className="visualizer-official-code"><span>OFFICIAL MORSE</span><b>{selectedCharacter?.code.replaceAll('.', '·').replaceAll('-', '−')}</b></div>
+          </div>
+
+          <div className="visualizer-phrase-card">
+            <span className="eyebrow">MEMORY PHRASE</span>
+            <div className="visualizer-phrase">
+              {phrase.map((word, index) => {
+                const isDash = signalForWord(word) === '−'
+                return (
+                  <div key={index} className={index === activeIndex ? 'visualizer-word active' : 'visualizer-word'}>
+                    <strong>{word}</strong>
+                    <span className={isDash ? 'visualizer-word-signal dash' : 'visualizer-word-signal dot'}>{isDash ? '—' : '·'}</span>
+                    <small>{isDash ? 'DASH' : 'DOT'}</small>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="visualizer-pattern-card">
+            <span className="eyebrow">TRANSLATED MORSE PATTERN</span>
+            <div className="visualizer-pattern">
+              {phrase.map((word, index) => (
+                <span key={index} className={index === activeIndex ? 'visualizer-pattern-signal active' : 'visualizer-pattern-signal'}>{signalForWord(word)}</span>
+              ))}
+            </div>
+            <div className="visualizer-pattern-caption">UPPERCASE = DASH <i /> lowercase = DOT</div>
+          </div>
+
+          <div className="visualizer-focus">
+            <span className="eyebrow">CURRENT SYLLABLE</span>
+            <strong>{activeWord}</strong>
+            <span className={signalForWord(activeWord ?? '') === '−' ? 'focus-signal dash' : 'focus-signal dot'}>{activeWord ? signalForWord(activeWord) : '·'}</span>
+            <b>{activeWord ? signalForWord(activeWord) === '−' ? 'DASH' : 'DOT' : 'DOT'}</b>
+          </div>
+
+          <div className="visualizer-controls">
+            <div className="visualizer-playback">
+              <button type="button" onClick={restart} aria-label="Restart animation">↺</button>
+              <button type="button" className="visualizer-play-button" onClick={() => {
+                if (activeIndex === phrase.length - 1 && !isPlaying) setActiveIndex(0)
+                setIsPlaying((playing) => !playing)
+              }}>{isPlaying ? 'Ⅱ Pause' : '▶ Play phrase'}</button>
+              <button type="button" onClick={() => step(-1)} disabled={activeIndex === 0} aria-label="Previous syllable">←</button>
+              <button type="button" onClick={() => step(1)} disabled={activeIndex === phrase.length - 1} aria-label="Next syllable">→</button>
+            </div>
+            <label className="visualizer-speed">STEP SPEED
+              <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}>
+                <option value={1300}>Slow</option>
+                <option value={900}>Normal</option>
+                <option value={550}>Fast</option>
+              </select>
+            </label>
+          </div>
+          <div className="visualizer-progress"><span style={{ width: (((activeIndex + 1) / phrase.length) * 100) + '%' }} /></div>
+          <div className="visualizer-step-count">SYLLABLE {activeIndex + 1} OF {phrase.length}</div>
+        </div>
+      </div>
+      <div className="visualizer-legend"><span><i className="legend-dot" /> Lowercase syllable = dot (·)</span><span><i className="legend-dash" /> UPPERCASE syllable = dash (—)</span></div>
+    </section>
+  )
+}
+
 function App() {
   const [activePage, setActivePage] = useState<Page>('Overview')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -441,6 +569,8 @@ function App() {
             <ReferencePage />
           ) : activePage === 'Learn' ? (
             <LearnPage />
+          ) : activePage === 'Morse Visualizer' ? (
+            <MorseVisualizerPage />
           ) : (
             <section className="placeholder-page">
               <div className="eyebrow">MORSECODE LEARNING STUDIO</div>
