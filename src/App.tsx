@@ -4,12 +4,13 @@ import { MORSE_CHARACTERS, type MorseCategory } from './data/morseCode'
 import { LETTER_LESSONS } from './data/lessons'
 import { LETTER_MNEMONICS } from './data/mnemonics'
 
-type Page = 'Overview' | 'Learn' | 'Practice' | 'Assessments' | 'Morse Visualizer' | 'Reference' | 'Progress'
+type Page = 'Overview' | 'Learn' | 'Practice' | 'Listening' | 'Assessments' | 'Morse Visualizer' | 'Reference' | 'Progress'
 
 const navigation: { label: Page; icon: string; description: string }[] = [
   { label: 'Overview', icon: '◫', description: 'Your learning dashboard' },
   { label: 'Learn', icon: '▤', description: 'Build your Morse foundations' },
   { label: 'Practice', icon: '⌁', description: 'Train your recognition' },
+  { label: 'Listening', icon: '♫', description: 'Recognise Morse by sound' },
   { label: 'Assessments', icon: '✓', description: 'Measure your recall' },
   { label: 'Morse Visualizer', icon: '◉', description: 'See and hear Morse signals' },
   { label: 'Reference', icon: '▦', description: 'Letters, numbers and symbols' },
@@ -706,6 +707,177 @@ function AssessmentsPage() {
   )
 }
 
+
+type ListeningQuestion = { character: (typeof MORSE_CHARACTERS)[number]; choices: (typeof MORSE_CHARACTERS)[number][] }
+type ListeningAttempt = { date: string; score: number; total: number }
+
+function shuffledListening<T,>(items: T[]): T[] {
+  const result = [...items]
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[result[index], result[swapIndex]] = [result[swapIndex], result[index]]
+  }
+  return result
+}
+
+function createListeningQuestion(): ListeningQuestion {
+  const character = shuffledListening(MORSE_CHARACTERS)[0]
+  const alternatives = shuffledListening(MORSE_CHARACTERS.filter((item) => item.character !== character.character)).slice(0, 3)
+  return { character, choices: shuffledListening([character, ...alternatives]) }
+}
+
+function playMorseAudio(code: string, context: AudioContext, unitMs: number, frequency: number) {
+  const unit = unitMs / 1000
+  let cursor = context.currentTime + 0.035
+  code.split('').forEach((signal) => {
+    const duration = signal === '.' ? unit : unit * 3
+    const oscillator = context.createOscillator()
+    const gain = context.createGain()
+    oscillator.type = 'sine'
+    oscillator.frequency.setValueAtTime(frequency, cursor)
+    gain.gain.setValueAtTime(0, cursor)
+    gain.gain.linearRampToValueAtTime(0.16, cursor + 0.008)
+    gain.gain.setValueAtTime(0.16, cursor + Math.max(0.012, duration - 0.008))
+    gain.gain.linearRampToValueAtTime(0, cursor + duration)
+    oscillator.connect(gain)
+    gain.connect(context.destination)
+    oscillator.start(cursor)
+    oscillator.stop(cursor + duration + 0.01)
+    cursor += duration + unit
+  })
+  return Math.max(0, (cursor - context.currentTime) * 1000)
+}
+
+function ListeningPage() {
+  const [selectedCharacter, setSelectedCharacter] = useState(MORSE_CHARACTERS[0].character)
+  const [speed, setSpeed] = useState(10)
+  const [frequency, setFrequency] = useState(650)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const playbackTimerRef = useRef<number | null>(null)
+  const [question, setQuestion] = useState<ListeningQuestion>(() => createListeningQuestion())
+  const [selectedAnswer, setSelectedAnswer] = useState('')
+  const [answered, setAnswered] = useState(false)
+  const [questionNumber, setQuestionNumber] = useState(1)
+  const [score, setScore] = useState(0)
+  const [streak, setStreak] = useState(0)
+  const [roundComplete, setRoundComplete] = useState(false)
+  const [attempts, setAttempts] = useState<ListeningAttempt[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('morsecodev2-listening-attempts') ?? '[]') as ListeningAttempt[]
+    } catch {
+      return []
+    }
+  })
+
+  const unitMs = 1200 / speed
+  const selected = MORSE_CHARACTERS.find((item) => item.character === selectedCharacter) ?? MORSE_CHARACTERS[0]
+  const codeText = (code: string) => code.replaceAll('.', '·').replaceAll('-', '−')
+
+  const playCode = async (code: string) => {
+    const context = audioContextRef.current ?? new AudioContext()
+    audioContextRef.current = context
+    await context.resume()
+    if (playbackTimerRef.current !== null) window.clearTimeout(playbackTimerRef.current)
+    setIsPlaying(true)
+    const duration = playMorseAudio(code, context, unitMs, frequency)
+    playbackTimerRef.current = window.setTimeout(() => setIsPlaying(false), duration)
+  }
+
+  useEffect(() => () => {
+    if (playbackTimerRef.current !== null) window.clearTimeout(playbackTimerRef.current)
+    void audioContextRef.current?.close()
+  }, [])
+
+  const chooseAnswer = (character: string) => {
+    if (answered || roundComplete) return
+    setSelectedAnswer(character)
+    setAnswered(true)
+    if (character === question.character.character) setScore((current) => current + 1)
+    setStreak((current) => character === question.character.character ? current + 1 : 0)
+  }
+
+  const nextQuestion = () => {
+    if (!answered) return
+    if (questionNumber === 10) {
+      const finalScore = score
+      const nextAttempts = [{ date: new Date().toLocaleDateString(), score: finalScore, total: 10 }, ...attempts].slice(0, 8)
+      setAttempts(nextAttempts)
+      localStorage.setItem('morsecodev2-listening-attempts', JSON.stringify(nextAttempts))
+      setRoundComplete(true)
+      return
+    }
+    setQuestion(createListeningQuestion())
+    setQuestionNumber((current) => current + 1)
+    setSelectedAnswer('')
+    setAnswered(false)
+  }
+
+  const restartRound = () => {
+    setQuestion(createListeningQuestion())
+    setQuestionNumber(1)
+    setSelectedAnswer('')
+    setAnswered(false)
+    setScore(0)
+    setStreak(0)
+    setRoundComplete(false)
+  }
+
+  const bestScore = attempts.reduce((best, item) => Math.max(best, item.score), 0)
+
+  return (
+    <section className="listening-page">
+      <div className="training-intro">
+        <div className="eyebrow">TRAIN YOUR EAR, NOT YOUR EYES</div>
+        <h1>Hear the signal. <em>Know the code.</em></h1>
+        <p>Listen to the tone, recognise its rhythm and identify the character. The pattern stays hidden until you answer.</p>
+      </div>
+
+      <div className="listening-settings">
+        <label><span className="eyebrow">PLAYBACK SPEED</span><select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}><option value={5}>5 WPM · Very slow</option><option value={10}>10 WPM · Slow</option><option value={15}>15 WPM · Normal</option><option value={20}>20 WPM · Fast</option></select></label>
+        <label><span className="eyebrow">TONE FREQUENCY</span><select value={frequency} onChange={(event) => setFrequency(Number(event.target.value))}><option value={500}>500 Hz · Low</option><option value={650}>650 Hz · Standard</option><option value={800}>800 Hz · High</option></select></label>
+        <div className="listening-timing"><span className="eyebrow">DOT LENGTH</span><strong>{Math.round(unitMs)} ms</strong></div>
+      </div>
+
+      <div className="listening-player">
+        <div className="listening-section-title"><span className="eyebrow">MORSE SOUND PLAYER</span><span>LEARN THE RHYTHM</span></div>
+        <h2>Choose a character to hear</h2>
+        <div className="listening-player-controls">
+          <select aria-label="Choose a character to play" value={selectedCharacter} onChange={(event) => setSelectedCharacter(event.target.value)}>{MORSE_CHARACTERS.map((item) => <option key={item.character} value={item.character}>{item.character} — {item.name}</option>)}</select>
+          <button className="lesson-primary-button" onClick={() => void playCode(selected.code)}>{isPlaying ? '▶ Play again' : '▶ Play signal'}</button>
+        </div>
+        <div className="listening-reference-reveal"><span>SELECTED CHARACTER</span><strong>{selected.character}</strong><b>{codeText(selected.code)}</b></div>
+        <p className="listening-player-note">This player shows the pattern so you can study the sound. The challenge below hides it.</p>
+      </div>
+
+      <div className="listening-challenge">
+        <div className="listening-challenge-heading"><div><span className="eyebrow">AUDIO RECOGNITION CHALLENGE</span><h2>Can you identify the signal?</h2></div><span className="listening-round-count">{roundComplete ? 'ROUND COMPLETE' : 'QUESTION ' + questionNumber + ' / 10'}</span></div>
+        {!roundComplete ? (
+          <>
+            <div className="listening-score-strip"><span>Correct <strong>{score}</strong></span><span>Streak <strong>{streak}</strong></span><span>Speed <strong>{speed} WPM</strong></span></div>
+            <div className="listening-audio-prompt">
+              <div className={isPlaying ? 'listening-wave active' : 'listening-wave'} aria-hidden="true">{Array.from({ length: 25 }, (_, index) => <i key={index} style={{ height: (12 + ((index * 17 + questionNumber * 7) % 29)) + 'px' }} />)}</div>
+              <button className="listening-replay-button" onClick={() => void playCode(question.character.code)}>{isPlaying ? '▶ Replay tone' : '▶ Listen to the signal'}</button>
+              <span className="listening-hidden-note">THE MORSE PATTERN IS HIDDEN</span>
+            </div>
+            <div className="listening-answer-grid">{question.choices.map((choice) => {
+              const correct = choice.character === question.character.character
+              const chosen = selectedAnswer === choice.character
+              const state = answered && correct ? ' correct' : answered && chosen ? ' incorrect' : ''
+              return <button key={choice.character} className={'listening-answer' + state} disabled={answered} onClick={() => chooseAnswer(choice.character)}>{choice.character}</button>
+            })}</div>
+            {answered ? <div className="listening-feedback"><div><strong className={selectedAnswer === question.character.character ? 'feedback-correct' : 'feedback-incorrect'}>{selectedAnswer === question.character.character ? 'Correct recognition.' : 'Not quite. The answer is ' + question.character.character + '.'}</strong><span>Its Morse pattern: {codeText(question.character.code)}</span></div><button className="lesson-primary-button" onClick={nextQuestion}>{questionNumber === 10 ? 'Finish round' : 'Next signal'} <span>→</span></button></div> : <p className="listening-instruction">Listen as many times as you need, then choose the character. The answer and pattern will appear after your choice.</p>}
+          </>
+        ) : (
+          <div className="listening-round-result"><span className="eyebrow">YOUR LISTENING SCORE</span><strong>{score}<small> / 10</small></strong><h3>{score >= 8 ? 'Excellent listening.' : score >= 6 ? 'Good progress.' : 'Keep training your ear.'}</h3><p>{score >= 8 ? 'You are recognising the rhythm with confidence.' : 'Try a slower speed, listen carefully to each tone, and give it another round.'}</p><button className="lesson-primary-button" onClick={restartRound}>Start another round <span>↻</span></button></div>
+        )}
+      </div>
+
+      <div className="listening-history"><div className="assessment-history-heading"><span className="eyebrow">RECENT LISTENING ROUNDS</span><strong>Best score: {attempts.length ? bestScore + ' / 10' : '—'}</strong></div>{attempts.length ? attempts.slice(0, 5).map((attempt, index) => <div className="assessment-history-row" key={index}><span>Round {attempts.length - index}</span><span>{attempt.date}</span><strong>{attempt.score} / {attempt.total}</strong></div>) : <p>No completed listening rounds yet.</p>}</div>
+    </section>
+  )
+}
+
 function App() {
   const [activePage, setActivePage] = useState<Page>('Overview')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -735,7 +907,7 @@ function App() {
             >
               <span className="nav-icon" aria-hidden="true">{item.icon}</span>
               <span>{item.label}</span>
-              {item.label === 'Morse Visualizer' && <span className="nav-new">TOOL</span>}{item.label === 'Assessments' && <span className="nav-new">TEST</span>}
+              {item.label === 'Morse Visualizer' && <span className="nav-new">TOOL</span>}{item.label === 'Assessments' && <span className="nav-new">TEST</span>}{item.label === 'Listening' && <span className="nav-new">AUDIO</span>}
             </button>
           ))}
         </nav>
@@ -823,6 +995,8 @@ function App() {
             <LearnPage />
           ) : activePage === 'Practice' ? (
             <PracticePage />
+          ) : activePage === 'Listening' ? (
+            <ListeningPage />
           ) : activePage === 'Assessments' ? (
             <AssessmentsPage />
           ) : activePage === 'Morse Visualizer' ? (
