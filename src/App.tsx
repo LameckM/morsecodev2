@@ -185,6 +185,7 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
   const [questionIndex, setQuestionIndex] = useState(0)
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('')
   const [quizChoices, setQuizChoices] = useState<(typeof MORSE_CHARACTERS)[number][]>([])
+  const [quizHadMistake, setQuizHadMistake] = useState(false)
   const [showFoundations, setShowFoundations] = useState(initialLessonIndex === 0 && completed.length === 0)
 
   const lesson = LETTER_LESSONS[selectedLesson]
@@ -219,6 +220,7 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
     setLearningStage('quiz')
     setQuestionIndex(0)
     setFeedback('')
+    setQuizHadMistake(false)
     if (lessonCharacters[0]) makeQuizChoices(lessonCharacters[0])
   }
 
@@ -232,7 +234,8 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
         writeStoredValue('morsecodev2-completed-lessons', nextCompleted)
       }
     } else {
-      // Remove a wrong option so each retry narrows the choices instead of allowing blind cycling.
+      // A lesson must be recalled correctly on the first attempt for every question.
+      setQuizHadMistake(true)
       setQuizChoices((current) => current.filter((choice) => choice.code !== code))
       setFeedback('incorrect')
     }
@@ -378,6 +381,7 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
                     </div>
                     {feedback && <div className={feedback === 'correct' ? 'quiz-feedback good' : 'quiz-feedback retry'}>{feedback === 'correct' ? 'Correct. You recalled the pattern.' : 'Not quite. Think of the sequence, then try again.'}</div>}
                     {feedback === 'correct' && questionIndex < lessonCharacters.length - 1 && <button className="lesson-primary-button" onClick={continueQuiz}>Next question <span>→</span></button>}
+                    {feedback === 'correct' && questionIndex === lessonCharacters.length - 1 && quizHadMistake && <button className="lesson-primary-button" onClick={() => { setQuestionIndex(0); setFeedback(''); setQuizHadMistake(false); if (lessonCharacters[0]) makeQuizChoices(lessonCharacters[0]) }}>Retry the full quiz <span>↻</span></button>}
                     {feedback === 'incorrect' && <button className="lesson-secondary-button" onClick={continueQuiz}>Try again</button>}
                   </div>
                   <button className="lesson-back-link" onClick={() => { setLearningStage('study'); setReviewIndex(0); setCodeRevealed(false); setQuestionIndex(0); setFeedback(''); setQuizChoices([]) }}>← Review the characters again</button>
