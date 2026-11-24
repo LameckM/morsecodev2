@@ -24,6 +24,10 @@ function formatMorseCode(code: string): string {
   return code.replaceAll('.', '·').replaceAll('-', '−')
 }
 
+function isDashMnemonicWord(word: string): boolean {
+  return isDashMnemonicWord(word)
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -343,7 +347,7 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
                       <span className="mnemonic-heading">MEMORY PHRASE</span>
                       <div className="mnemonic-phrase">
                         {studyMnemonic.map((word, index) => {
-                          const isDash = /[A-Z]/.test(word) && word === word.toUpperCase()
+                          const isDash = isDashMnemonicWord(word)
                           return (
                             <span className={isDash ? 'mnemonic-token dash-token' : 'mnemonic-token dot-token'} key={index}>
                               <strong>{word}</strong>
@@ -352,9 +356,9 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
                           )
                         })}
                       </div>
-                      <div className="mnemonic-sequence" aria-label={studyMnemonic.map((word) => /[A-Z]/.test(word) && word === word.toUpperCase() ? 'dash' : 'dot').join(', ')}>
+                      <div className="mnemonic-sequence" aria-label={studyMnemonic.map((word) => isDashMnemonicWord(word) ? 'dash' : 'dot').join(', ')}>
                         {studyMnemonic.map((word, index) => {
-                          const isDash = /[A-Z]/.test(word) && word === word.toUpperCase()
+                          const isDash = isDashMnemonicWord(word)
                           return <span className={isDash ? 'mnemonic-signal dash-signal' : 'mnemonic-signal dot-signal'} key={index}>{isDash ? '—' : '·'}</span>
                         })}
                       </div>
@@ -412,7 +416,7 @@ function MorseVisualizerPage() {
   const phrase = useMemo(() => LETTER_MNEMONICS[selectedLetter] ?? [], [selectedLetter])
   const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
   const selectedCharacter = alphabet.find((item) => item.character === selectedLetter)
-  const signalForWord = (word: string) => /[A-Z]/.test(word) && word === word.toUpperCase() ? '−' : '·'
+  const signalForWord = (word: string) => isDashMnemonicWord(word) ? '−' : '·'
   const activeWord = phrase[activeIndex]
 
   const playSignal = (word: string, context: AudioContext) => {
