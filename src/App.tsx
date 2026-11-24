@@ -337,7 +337,6 @@ function MorseVisualizerPage() {
   const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
   const selectedCharacter = alphabet.find((item) => item.character === selectedLetter)
   const signalForWord = (word: string) => /[A-Z]/.test(word) && word === word.toUpperCase() ? '−' : '·'
-  const visualPattern = phrase.map(signalForWord).join(' ')
   const activeWord = phrase[activeIndex]
 
   useEffect(() => {
@@ -574,7 +573,7 @@ function App() {
           ) : (
             <section className="placeholder-page">
               <div className="eyebrow">MORSECODE LEARNING STUDIO</div>
-              <h1>{activePage === 'Morse Visualizer' ? <>Morse <em>Visualizer.</em></> : <>{activePage}<em>.</em></>}</h1>
+              <h1>{activePage}<em>.</em></h1>
               <p>This section is part of the learning studio. Its interactive features will be built in the next development steps.</p>
               <div className="placeholder-line"><span>·</span><span>−</span><span>·</span><span>·</span></div>
               <button className="return-button" onClick={() => selectPage('Overview')}>← Back to overview</button>
