@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import { MORSE_CHARACTERS, type MorseCategory } from './data/morseCode'
+import { LETTER_LESSONS } from './data/lessons'
 
 type Page = 'Overview' | 'Learn' | 'Practice' | 'Morse Visualizer' | 'Reference' | 'Progress'
 
@@ -103,6 +104,157 @@ function ReferencePage() {
       <div className="reference-note">
         <span className="note-symbol">i</span>
         <p><strong>Reading the code:</strong> A dot (·) is a short signal. A dash (−) is a signal three times as long. The spaces between signals are just as important as the signals themselves.</p>
+      </div>
+    </section>
+  )
+}
+
+
+function LearnPage() {
+  const [completed, setCompleted] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem('morsecodev2-completed-lessons')
+      return saved ? JSON.parse(saved) as number[] : []
+    } catch {
+      return []
+    }
+  })
+  const [selectedLesson, setSelectedLesson] = useState(0)
+  const [questionIndex, setQuestionIndex] = useState(0)
+  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('')
+  const [showFoundations, setShowFoundations] = useState(true)
+
+  const lesson = LETTER_LESSONS[selectedLesson]
+  const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
+  const lessonCharacters = lesson.letters.map((letter) => alphabet.find((item) => item.character === letter)!).filter(Boolean)
+  const target = lessonCharacters[questionIndex]
+  const choices = target
+    ? [target, ...alphabet.filter((item) => item.character !== target.character).slice((target.character.charCodeAt(0) - 65) % 20, (target.character.charCodeAt(0) - 65) % 20 + 3)].sort((a, b) => a.character.localeCompare(b.character))
+    : []
+  const isComplete = completed.includes(lesson.id)
+  const completedCount = completed.length
+  const progressPercent = Math.round((completedCount / LETTER_LESSONS.length) * 100)
+
+  const chooseLesson = (index: number) => {
+    if (index > 0 && !completed.includes(LETTER_LESSONS[index - 1].id)) return
+    setSelectedLesson(index)
+    setQuestionIndex(0)
+    setFeedback('')
+    setShowFoundations(false)
+  }
+
+  const chooseAnswer = (character: string) => {
+    if (!target || feedback || isComplete) return
+    if (character === target.character) {
+      setFeedback('correct')
+      if (questionIndex === lessonCharacters.length - 1) {
+        const nextCompleted = [...new Set([...completed, lesson.id])]
+        setCompleted(nextCompleted)
+        localStorage.setItem('morsecodev2-completed-lessons', JSON.stringify(nextCompleted))
+      }
+    } else {
+      setFeedback('incorrect')
+    }
+  }
+
+  const continueQuiz = () => {
+    if (feedback === 'incorrect') {
+      setFeedback('')
+      return
+    }
+    if (questionIndex < lessonCharacters.length - 1) {
+      setQuestionIndex((current) => current + 1)
+      setFeedback('')
+    }
+  }
+
+  const nextLesson = () => {
+    if (selectedLesson < LETTER_LESSONS.length - 1) {
+      setSelectedLesson((current) => current + 1)
+      setQuestionIndex(0)
+      setFeedback('')
+    }
+  }
+
+  return (
+    <section className="learn-page">
+      <div className="learn-intro">
+        <div className="eyebrow">YOUR GUIDED COURSE</div>
+        <h1>Learn it <em>step by step.</em></h1>
+        <p>Build recognition gradually. Each lesson introduces a small group of letters, then checks what you remember.</p>
+      </div>
+
+      <div className="learn-progress-panel">
+        <div className="learn-progress-copy"><div><span className="eyebrow">COURSE PROGRESS</span><strong>{completedCount} of {LETTER_LESSONS.length} lessons completed</strong></div><b>{progressPercent}%</b></div>
+        <div className="learn-progress-track"><span style={{ width: progressPercent + '%' }} /></div>
+      </div>
+
+      <div className="learn-layout">
+        <aside className="lesson-list">
+          <div className="lesson-list-heading"><span className="eyebrow">THE CURRICULUM</span><strong>Letter foundations</strong></div>
+          {LETTER_LESSONS.map((item, index) => {
+            const done = completed.includes(item.id)
+            const locked = index > 0 && !completed.includes(LETTER_LESSONS[index - 1].id)
+            return (
+              <button key={item.id} className={selectedLesson === index && !showFoundations ? 'lesson-list-item active' : 'lesson-list-item'} disabled={locked} onClick={() => chooseLesson(index)}>
+                <span className={done ? 'lesson-number done' : 'lesson-number'}>{done ? '✓' : String(item.id).padStart(2, '0')}</span>
+                <span className="lesson-list-copy"><strong>{item.title}</strong><small>{item.letters.join(' · ')}</small></span>
+                <span className="lesson-list-state">{done ? 'DONE' : locked ? 'LOCKED' : selectedLesson === index && !showFoundations ? 'OPEN' : 'START'}</span>
+              </button>
+            )
+          })}
+        </aside>
+
+        <div className="lesson-workspace">
+          {showFoundations ? (
+            <div className="lesson-content">
+              <div className="lesson-kicker">START HERE · FOUNDATIONS</div>
+              <h2>Two signals make the code.</h2>
+              <p className="lesson-lead">International Morse code uses just two kinds of signal. Learn their shape and timing before memorising letters.</p>
+              <div className="signal-lesson-grid">
+                <div className="signal-lesson-card"><span className="signal-demo dot-demo">·</span><strong>Dot</strong><b>Short signal</b><p>Use one basic time unit.</p></div>
+                <div className="signal-lesson-card"><span className="signal-demo dash-demo">−</span><strong>Dash</strong><b>Long signal</b><p>Hold for three time units.</p></div>
+              </div>
+              <div className="timing-note"><strong>Timing matters</strong><p>A gap between parts of the same character is one unit. The gap between letters is three units, and the gap between words is seven units.</p></div>
+              <div className="lesson-example"><span className="eyebrow">YOUR FIRST EXAMPLE</span><div className="example-pair"><span className="example-letter">E</span><span className="example-code">·</span><span className="example-divider" /><span className="example-letter">T</span><span className="example-code">−</span></div><p>E is one dot. T is one dash. These are the two simplest letters.</p></div>
+              <button className="lesson-primary-button" onClick={() => { setShowFoundations(false); setSelectedLesson(0); setQuestionIndex(0); setFeedback('') }}>Begin lesson 01 <span>→</span></button>
+            </div>
+          ) : (
+            <div className="lesson-content">
+              <div className="lesson-content-top"><span className="lesson-kicker">LESSON {String(lesson.id).padStart(2, '0')} / 07</span><span className="lesson-step">{isComplete ? 'COMPLETED' : 'LEARN & CHECK'}</span></div>
+              <h2>{lesson.title}</h2>
+              <p className="lesson-lead">{lesson.focus}</p>
+              <div className="lesson-character-grid">
+                {lessonCharacters.map((item) => (
+                  <div className="lesson-character" key={item.character}>
+                    <span className="lesson-character-letter">{item.character}</span>
+                    <span className="lesson-character-code">{item.code.replaceAll('.', '·').replaceAll('-', '−')}</span>
+                    <span className="lesson-character-cue">{item.code.split('').map((signal) => signal === '.' ? 'DOT' : 'DASH').join(' · ')}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="memory-tip"><span>MEMORY TIP</span><p>Say the pattern aloud as a rhythm: “{target?.code.split('').map((signal) => signal === '.' ? 'dit' : 'dah').join(' – ')}”. Keep the order exact; a different order makes a different letter.</p></div>
+              <div className="lesson-quiz">
+                <div className="quiz-heading"><div><span className="eyebrow">QUICK CHECK</span><h3>{isComplete ? 'Lesson passed' : 'Which pattern belongs to this letter?'}</h3></div><span>{isComplete ? lessonCharacters.length : questionIndex + 1} / {lessonCharacters.length}</span></div>
+                {isComplete ? (
+                  <div className="quiz-complete"><strong>Well done — you completed this lesson.</strong><p>Your progress is saved on this device. Continue when you are ready for the next group.</p>{selectedLesson < LETTER_LESSONS.length - 1 ? <button className="lesson-primary-button" onClick={nextLesson}>Next lesson <span>→</span></button> : <p className="course-finished">You have completed all the letter lessons.</p>}</div>
+                ) : (
+                  <>
+                    <p className="quiz-question">Choose the Morse code for <strong>{target?.character}</strong>.</p>
+                    <div className="quiz-options">
+                      {choices.map((choice) => <button key={choice.character} className="quiz-option" disabled={Boolean(feedback)} onClick={() => chooseAnswer(choice.character)}>{choice.code.replaceAll('.', '·').replaceAll('-', '−')}</button>)}
+                    </div>
+                    {feedback && <div className={feedback === 'correct' ? 'quiz-feedback good' : 'quiz-feedback retry'}>{feedback === 'correct' ? 'Correct. You recognised the pattern.' : 'Not quite. Try again and pay attention to the order of the signals.'}</div>}
+                    {feedback === 'correct' && questionIndex < lessonCharacters.length - 1 && <button className="lesson-primary-button" onClick={continueQuiz}>Next question <span>→</span></button>}
+                    {feedback === 'incorrect' && <button className="lesson-secondary-button" onClick={continueQuiz}>Try again</button>}
+                    {feedback === 'correct' && questionIndex === lessonCharacters.length - 1 && <div className="quiz-feedback good">Lesson complete. Your result has been saved.</div>}
+                  </>
+                )}
+              </div>
+              <button className="lesson-back-link" onClick={() => setShowFoundations(true)}>← Back to foundations</button>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   )
@@ -221,6 +373,8 @@ function App() {
             </>
           ) : activePage === 'Reference' ? (
             <ReferencePage />
+          ) : activePage === 'Learn' ? (
+            <LearnPage />
           ) : (
             <section className="placeholder-page">
               <div className="eyebrow">MORSECODE LEARNING STUDIO</div>
