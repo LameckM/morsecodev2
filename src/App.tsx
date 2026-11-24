@@ -25,7 +25,7 @@ function formatMorseCode(code: string): string {
 }
 
 function isDashMnemonicWord(word: string): boolean {
-  return isDashMnemonicWord(word)
+  return /[A-Z]/.test(word) && word === word.toUpperCase()
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
