@@ -170,11 +170,11 @@ function ReferencePage() {
 }
 
 
-function LearnPage() {
+function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) {
   const [completed, setCompleted] = useState<number[]>(() =>
     readStoredValue('morsecodev2-completed-lessons', [], isCompletedLessons)
   )
-  const [selectedLesson, setSelectedLesson] = useState(0)
+  const [selectedLesson, setSelectedLesson] = useState(initialLessonIndex)
   const [reviewIndex, setReviewIndex] = useState(0)
   const [codeRevealed, setCodeRevealed] = useState(false)
   const [learningStage, setLearningStage] = useState<'study' | 'quiz'>('study')
