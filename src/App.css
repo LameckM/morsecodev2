@@ -378,3 +378,23 @@ h1 em{color:#D99ABF}.welcome-row .eyebrow,.reference-intro .eyebrow,.learn-intro
 .recall-banner p { margin:6px 0 0; color:#A5AEC9; font-size:10px; }
 .lesson-finished-panel { margin-top:22px; padding:20px; border:1px solid #343D5C; border-radius:8px; background:#252D49; }
 .lesson-finished-panel .lesson-primary-button { margin-top:10px; }
+
+
+/* Letter mnemonic visual guide */
+.mnemonic-panel { width:100%; max-width:560px; margin:0 auto 18px; padding:15px 14px 12px; border:1px solid #343D5C; border-radius:9px; background:#1B2139; }
+.mnemonic-heading { display:block; margin-bottom:12px; color:#929FFF; font:9px 'DM Mono',monospace; letter-spacing:1.3px; }
+.mnemonic-phrase { display:flex; justify-content:center; align-items:flex-start; flex-wrap:wrap; gap:9px 13px; }
+.mnemonic-token { display:grid; justify-items:center; gap:5px; min-width:35px; }
+.mnemonic-token strong { color:#EDF0FF; font-size:13px; letter-spacing:.3px; }
+.mnemonic-token small { font:8px 'DM Mono',monospace; letter-spacing:.5px; }
+.mnemonic-token.dash-token small { color:#D99ABF; }
+.mnemonic-token.dot-token small { color:#929FFF; }
+.mnemonic-sequence { display:flex; justify-content:center; align-items:center; gap:13px; margin:17px 0 12px; padding:11px; border-radius:7px; background:#252D49; }
+.mnemonic-signal { display:inline-block; font:700 29px 'DM Mono',monospace; line-height:1; }
+.mnemonic-signal.dash-signal { color:#D99ABF; }
+.mnemonic-signal.dot-signal { color:#929FFF; }
+.mnemonic-key { display:flex; align-items:center; justify-content:center; gap:6px; color:#A5AEC9; font:8px 'DM Mono',monospace; letter-spacing:.3px; }
+.mnemonic-key b:first-child { color:#D99ABF; }
+.mnemonic-key b:last-child { color:#929FFF; }
+.mnemonic-key i { width:1px; height:11px; margin:0 4px; background:#59658F; }
+@media (max-width:440px) { .mnemonic-panel { padding:13px 8px 10px; } .mnemonic-phrase { gap:8px 10px; } .mnemonic-token strong { font-size:11px; } .mnemonic-sequence { gap:10px; } }
