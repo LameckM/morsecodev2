@@ -21,7 +21,7 @@ type PracticeStats = { answered: number; correct: number; bestStreak: number }
 type StoredAttempt = { date: string; score: number; total: number; timestamp?: number }
 
 function formatMorseCode(code: string): string {
-  return formatMorseCode(code)
+  return code.replaceAll('.', '·').replaceAll('-', '−')
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
