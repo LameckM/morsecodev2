@@ -196,6 +196,17 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
   const [quizChoices, setQuizChoices] = useState<(typeof MORSE_CHARACTERS)[number][]>([])
   const [quizHadMistake, setQuizHadMistake] = useState(false)
   const [showFoundations, setShowFoundations] = useState(initialLessonIndex === 0 && completed.length === 0)
+  const [view, setView] = useState<'path' | 'lesson'>('path')
+  const [pathIndex, setPathIndex] = useState(initialLessonIndex)
+  const [pathStats] = useState<PracticeStats>(() =>
+    readStoredValue('morsecodev2-practice-stats', { answered: 0, correct: 0, bestStreak: 0 }, isPracticeStats)
+  )
+  const pathAudioRef = useRef<AudioContext | null>(null)
+
+  useEffect(() => () => {
+    void pathAudioRef.current?.close()
+    pathAudioRef.current = null
+  }, [])
 
   const lesson = LETTER_LESSONS[selectedLesson]
   const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
@@ -285,8 +296,129 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
     }
   }
 
+  const isLocked = (index: number) => index > 0 && !completed.includes(LETTER_LESSONS[index - 1].id)
+  const firstOpenIndex = LETTER_LESSONS.findIndex((item) => !completed.includes(item.id))
+
+  const openLesson = (index: number) => {
+    if (isLocked(index)) return
+    chooseLesson(index)
+    if (index === 0 && completed.length === 0) setShowFoundations(true)
+    setView('lesson')
+  }
+
+  const backToPath = () => {
+    setPathIndex(firstOpenIndex === -1 ? selectedLesson : firstOpenIndex)
+    setView('path')
+  }
+
+  const hearCode = async (code: string) => {
+    try {
+      const context = pathAudioRef.current ?? new AudioContext()
+      pathAudioRef.current = context
+      await context.resume()
+      playMorseAudio(code, context, 100, 650)
+    } catch {
+      // Audio can be blocked by the browser; the visual pattern still works.
+    }
+  }
+
+  if (view === 'path') {
+    const pathLesson = LETTER_LESSONS[pathIndex]
+    const pathLocked = isLocked(pathIndex)
+    const pathDone = completed.includes(pathLesson.id)
+    const pathCharacters = pathLesson.letters.flatMap((letter) => alphabet.filter((item) => item.character === letter))
+    const practiceAccuracy = pathStats.answered ? Math.round((pathStats.correct / pathStats.answered) * 100) : 0
+    const offsets = [0, 64, 0, -64]
+
+    return (
+      <section className="learn-page">
+        <div className="learn-intro">
+          <div className="eyebrow">YOUR GUIDED COURSE</div>
+          <h1>Learn it <em>step by step.</em></h1>
+          <p>Follow the path. Each lesson adds a few letters, then checks your memory without the answers in view.</p>
+        </div>
+
+        <div className="path-shell">
+          <div className="path-main">
+            <div className="path-unit">
+              <span>THE CURRICULUM</span>
+              <h2>Letter foundations</h2>
+              <p>{LETTER_LESSONS.length} lessons from E and T to the full alphabet.</p>
+            </div>
+            <ol className="path-list" aria-label="Lesson path">
+              {LETTER_LESSONS.map((item, index) => {
+                const done = completed.includes(item.id)
+                const locked = isLocked(index)
+                const state = done ? 'done' : locked ? 'locked' : 'current'
+                return (
+                  <li key={item.id} className="path-step" style={{ transform: `translateX(${offsets[index % 4]}px)` }}>
+                    <button
+                      type="button"
+                      className={`path-node ${state}${pathIndex === index ? ' selected' : ''}`}
+                      onClick={() => setPathIndex(index)}
+                      aria-pressed={pathIndex === index}
+                      aria-label={`Lesson ${item.id}, ${item.title}, ${done ? 'completed' : locked ? 'locked' : 'ready'}`}
+                    >
+                      {done ? (
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l4.5 4.5L19 7" /></svg>
+                      ) : locked ? (
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+                      ) : (
+                        <span>{String(item.id).padStart(2, '0')}</span>
+                      )}
+                    </button>
+                    <div className="path-step-label"><strong>{item.title}</strong><span>{item.letters.join(' · ')}</span></div>
+                  </li>
+                )
+              })}
+            </ol>
+          </div>
+
+          <aside className="path-side" aria-label="Lesson details and progress">
+            <div className="path-stats">
+              <div className="path-stat"><span>LESSONS</span><strong>{completed.length} / {LETTER_LESSONS.length}</strong></div>
+              <div className="path-stat"><span>BEST STREAK</span><strong>{pathStats.bestStreak}</strong></div>
+              <div className="path-stat"><span>PRACTICE</span><strong>{practiceAccuracy}%</strong></div>
+            </div>
+            <div className="path-track" role="progressbar" aria-valuenow={progressPercent} aria-valuemin={0} aria-valuemax={100} aria-label="Course progress"><span style={{ width: progressPercent + '%' }} /></div>
+
+            <section className="path-card">
+              <div className="path-card-top">
+                <span className="path-kicker">LESSON {String(pathLesson.id).padStart(2, '0')}</span>
+                <span className="path-badge">{pathDone ? 'DONE' : pathLocked ? 'LOCKED' : 'UP NEXT'}</span>
+              </div>
+              <h2>{pathLesson.title}</h2>
+              <p>{pathLesson.focus}</p>
+              <ul className="path-letters">
+                {pathCharacters.map((item) => {
+                  const phrase = LETTER_MNEMONICS[item.character] ?? []
+                  return (
+                    <li key={item.character}>
+                      <span className="path-letter">{item.character}</span>
+                      <span className="path-glyphs" role="img" aria-label={item.code.split('').map((sign) => sign === '.' ? 'dot' : 'dash').join(', ')}>
+                        {item.code.split('').map((sign, index) => <span className={sign === '.' ? 'path-dot' : 'path-dash'} key={index} />)}
+                      </span>
+                      <span className="path-phrase">{phrase.join(' ')}</span>
+                      <button type="button" className="path-hear" onClick={() => void hearCode(item.code)} aria-label={`Hear ${item.character}`}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 8a5 5 0 0 1 0 8" /></svg>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+              <p className="path-note">Capital syllable = dash. Lowercase = dot.</p>
+              {pathLocked && <p className="path-note">Finish lesson {pathLesson.id - 1} to unlock this one.</p>}
+              <button type="button" className="path-start" disabled={pathLocked} onClick={() => openLesson(pathIndex)}>{pathDone ? 'Review lesson' : 'Start lesson'}</button>
+            </section>
+          </aside>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="learn-page">
+      <button className="lesson-back-link" onClick={backToPath}>← Back to learning path</button>
       <div className="sr-only" aria-live="polite" aria-atomic="true">{feedback === 'correct' ? `Correct. ${target?.character ?? ''}.` : feedback === 'incorrect' ? `Incorrect answer for ${target?.character ?? 'this character'}. Try again.` : ''}</div>
       <div className="learn-intro">
         <div className="eyebrow">YOUR GUIDED COURSE</div>
