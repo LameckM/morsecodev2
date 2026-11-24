@@ -1086,12 +1086,10 @@ function App() {
             <div className="daily-icon">✳</div>
             <strong>Small steps. Clear signals.</strong>
             <p>A little practice every day builds lasting fluency.</p>
-            <div className="daily-dots" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
           </div>
           <div className="profile">
-            <div className="avatar">M</div>
-            <div><strong>Learner</strong><small>Beginner level</small></div>
-            <span className="profile-menu">•••</span>
+            <div className="avatar" aria-hidden="true">·−·</div>
+            <div><strong>Learning locally</strong><small>Progress saved in this browser</small></div>
           </div>
         </div>
       </aside>
@@ -1173,13 +1171,7 @@ function App() {
           ) : activePage === 'Morse Visualizer' ? (
             <MorseVisualizerPage />
           ) : (
-            <section className="placeholder-page">
-              <div className="eyebrow">MORSECODE LEARNING STUDIO</div>
-              <h1>{activePage}<em>.</em></h1>
-              <p>This section is part of the learning studio. Choose a learning activity from the workspace to continue.</p>
-              <div className="placeholder-line"><span>·</span><span>−</span><span>·</span><span>·</span></div>
-              <button className="return-button" onClick={() => selectPage('Overview')}>← Back to overview</button>
-            </section>
+            <div />
           )}
           <footer className="page-footer"><span>MORSECODE LEARNING STUDIO</span><span>LEARN AT YOUR OWN RHYTHM <b>·</b> 01</span></footer>
         </div>
