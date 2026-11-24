@@ -179,6 +179,7 @@ function LearnPage() {
   const [learningStage, setLearningStage] = useState<'study' | 'quiz'>('study')
   const [questionIndex, setQuestionIndex] = useState(0)
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('')
+  const [quizChoices, setQuizChoices] = useState<(typeof MORSE_CHARACTERS)[number][]>([])
   const [showFoundations, setShowFoundations] = useState(true)
 
   const lesson = LETTER_LESSONS[selectedLesson]
@@ -187,13 +188,7 @@ function LearnPage() {
   const studyCharacter = lessonCharacters[reviewIndex]
   const studyMnemonic = studyCharacter ? LETTER_MNEMONICS[studyCharacter.character] ?? [] : []
   const target = lessonCharacters[questionIndex]
-  const distractors = target
-    ? alphabet.filter((item) => item.character !== target.character).slice((target.character.charCodeAt(0) - 65) % 20, (target.character.charCodeAt(0) - 65) % 20 + 3)
-    : []
-  const choices = target ? [target, ...distractors].sort((a, b) => {
-    const rotate = (questionIndex + selectedLesson) % 4
-    return ((a.character.charCodeAt(0) + rotate) % 4) - ((b.character.charCodeAt(0) + rotate) % 4)
-  }) : []
+  const choices = quizChoices
   const isComplete = completed.includes(lesson.id)
   const completedCount = completed.length
   const progressPercent = Math.round((completedCount / LETTER_LESSONS.length) * 100)
@@ -206,13 +201,20 @@ function LearnPage() {
     setLearningStage('study')
     setQuestionIndex(0)
     setFeedback('')
+    setQuizChoices([])
     setShowFoundations(false)
+  }
+
+  const makeQuizChoices = (character: (typeof MORSE_CHARACTERS)[number]) => {
+    const distractors = shuffled(alphabet.filter((item) => item.character !== character.character)).slice(0, 3)
+    setQuizChoices(shuffled([character, ...distractors]))
   }
 
   const startQuiz = () => {
     setLearningStage('quiz')
     setQuestionIndex(0)
     setFeedback('')
+    if (lessonCharacters[0]) makeQuizChoices(lessonCharacters[0])
   }
 
   const chooseAnswer = (code: string) => {
@@ -225,6 +227,8 @@ function LearnPage() {
         writeStoredValue('morsecodev2-completed-lessons', nextCompleted)
       }
     } else {
+      // Remove a wrong option so each retry narrows the choices instead of allowing blind cycling.
+      setQuizChoices((current) => current.filter((choice) => choice.code !== code))
       setFeedback('incorrect')
     }
   }
@@ -235,8 +239,11 @@ function LearnPage() {
       return
     }
     if (questionIndex < lessonCharacters.length - 1) {
-      setQuestionIndex((current) => current + 1)
+      const nextIndex = questionIndex + 1
+      setQuestionIndex(nextIndex)
       setFeedback('')
+      const nextTarget = lessonCharacters[nextIndex]
+      if (nextTarget) makeQuizChoices(nextTarget)
     }
   }
 
@@ -248,6 +255,7 @@ function LearnPage() {
       setLearningStage('study')
       setQuestionIndex(0)
       setFeedback('')
+      setQuizChoices([])
     }
   }
 
@@ -301,7 +309,7 @@ function LearnPage() {
               </div>
               <div className="timing-note"><strong>Timing matters</strong><p>A gap between parts of the same character is one unit. The gap between letters is three units, and the gap between words is seven units.</p></div>
               <div className="lesson-example"><span className="eyebrow">YOUR FIRST EXAMPLE</span><div className="example-pair"><span className="example-letter">E</span><span className="example-code">·</span><span className="example-divider" /><span className="example-letter">T</span><span className="example-code">−</span></div><p>E is one dot. T is one dash. These are the two simplest letters.</p></div>
-              <button className="lesson-primary-button" onClick={() => { setShowFoundations(false); setSelectedLesson(0); setReviewIndex(0); setCodeRevealed(false); setLearningStage('study'); setQuestionIndex(0); setFeedback('') }}>Begin lesson 01 <span>→</span></button>
+              <button className="lesson-primary-button" onClick={() => { setShowFoundations(false); setSelectedLesson(0); setReviewIndex(0); setCodeRevealed(false); setLearningStage('study'); setQuestionIndex(0); setFeedback(''); setQuizChoices([]) }}>Begin lesson 01 <span>→</span></button>
             </div>
           ) : (
             <div className="lesson-content">
@@ -365,9 +373,8 @@ function LearnPage() {
                     {feedback && <div className={feedback === 'correct' ? 'quiz-feedback good' : 'quiz-feedback retry'}>{feedback === 'correct' ? 'Correct. You recalled the pattern.' : 'Not quite. Think of the sequence, then try again.'}</div>}
                     {feedback === 'correct' && questionIndex < lessonCharacters.length - 1 && <button className="lesson-primary-button" onClick={continueQuiz}>Next question <span>→</span></button>}
                     {feedback === 'incorrect' && <button className="lesson-secondary-button" onClick={continueQuiz}>Try again</button>}
-                    {feedback === 'correct' && questionIndex === lessonCharacters.length - 1 && <div className="quiz-feedback good">Lesson complete. Your result has been saved.</div>}
                   </div>
-                  <button className="lesson-back-link" onClick={() => { setLearningStage('study'); setReviewIndex(0); setCodeRevealed(false); setQuestionIndex(0); setFeedback('') }}>← Review the characters again</button>
+                  <button className="lesson-back-link" onClick={() => { setLearningStage('study'); setReviewIndex(0); setCodeRevealed(false); setQuestionIndex(0); setFeedback(''); setQuizChoices([]) }}>← Review the characters again</button>
                 </>
               )}
               <button className="lesson-back-link" onClick={() => setShowFoundations(true)}>← Back to foundations</button>
