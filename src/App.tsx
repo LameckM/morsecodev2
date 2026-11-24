@@ -514,7 +514,7 @@ function shuffled<T,>(items: T[]): T[] {
 function makeAssessmentQuestions(): AssessmentQuestion[] {
   return shuffled(MORSE_CHARACTERS).slice(0, 10).map((character) => ({
     character,
-    choices: shuffled([character, ...shuffled(MORSE_CHARACTERS.filter((item) => item.character !== character)).slice(0, 3)]),
+    choices: shuffled([character, ...shuffled(MORSE_CHARACTERS.filter((item) => item.character !== character.character)).slice(0, 3)]),
   }))
 }
 
