@@ -363,19 +363,20 @@ function MorseVisualizerPage() {
   useEffect(() => {
     if (!isPlaying) return
     const timer = window.setInterval(() => {
-      setActiveIndex((current) => {
-        if (current >= phrase.length - 1) {
-          setIsPlaying(false)
-          return current
-        }
-        const nextIndex = current + 1
-        const context = audioContextRef.current
-        if (context && phrase[nextIndex]) playSignal(phrase[nextIndex], context)
-        return nextIndex
-      })
+      if (activeIndex >= phrase.length - 1) {
+        setIsPlaying(false)
+        return
+      }
+
+      const nextIndex = activeIndex + 1
+      setActiveIndex(nextIndex)
+
+      const context = audioContextRef.current
+      const nextSignal = phrase[nextIndex]
+      if (context && nextSignal) playSignal(nextSignal, context)
     }, speed)
     return () => window.clearInterval(timer)
-  }, [isPlaying, phrase.length, speed])
+  }, [isPlaying, activeIndex, phrase, speed])
 
   const chooseLetter = (letter: string) => {
     setSelectedLetter(letter)
