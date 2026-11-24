@@ -1087,7 +1087,9 @@ function App() {
             <ListeningPage />
           ) : activePage === 'Assessments' ? (
             <AssessmentsPage />
-          ) : activePage === 'Progress' ? (\n            <ProgressPage onContinue={() => selectPage('Learn')} />\n          ) : activePage === 'Morse Visualizer' ? (
+          ) : activePage === 'Progress' ? (
+            <ProgressPage onContinue={() => selectPage('Learn')} />
+          ) : activePage === 'Morse Visualizer' ? (
             <MorseVisualizerPage />
           ) : (
             <section className="placeholder-page">
