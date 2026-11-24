@@ -20,6 +20,10 @@ const navigation: { label: Page; icon: string; description: string }[] = [
 type PracticeStats = { answered: number; correct: number; bestStreak: number }
 type StoredAttempt = { date: string; score: number; total: number; timestamp?: number }
 
+function formatMorseCode(code: string): string {
+  return formatMorseCode(code)
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -150,7 +154,7 @@ function ReferencePage() {
                   <span className={sign === '.' ? 'morse-dot' : 'morse-dash'} key={index} />
                 ))}
               </div>
-              <div className="character-code-text">{item.code.replaceAll('.', '·').replaceAll('-', '−')}</div>
+              <div className="character-code-text">{formatMorseCode(item.code)}</div>
             </article>
           ))}
         </div>
@@ -349,7 +353,7 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
                     </div>
                     {codeRevealed ? (
                       <div className="study-reveal">
-                        <span className="study-code">{studyCharacter?.code.replaceAll('.', '·').replaceAll('-', '−')}</span>
+                        <span className="study-code">{studyCharacter ? formatMorseCode(studyCharacter.code) : ''}</span>
                         <span className="study-rhythm">{studyCharacter?.code.split('').map((signal) => signal === '.' ? 'DIT' : 'DAH').join(' · ')}</span>
                         <p>Say the rhythm, then picture the sequence. Try to recall it once more before moving on.</p>
                       </div>
@@ -369,7 +373,7 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
                     <div className="quiz-heading"><div><span className="eyebrow">QUICK CHECK</span><h3>Which pattern belongs to this letter?</h3></div><span>{questionIndex + 1} / {lessonCharacters.length}</span></div>
                     <p className="quiz-question">Choose the Morse code for <strong>{target?.character}</strong>.</p>
                     <div className="quiz-options">
-                      {choices.map((choice) => <button key={choice.character} className="quiz-option" disabled={Boolean(feedback)} onClick={() => chooseAnswer(choice.code)}>{choice.code.replaceAll('.', '·').replaceAll('-', '−')}</button>)}
+                      {choices.map((choice) => <button key={choice.character} className="quiz-option" disabled={Boolean(feedback)} onClick={() => chooseAnswer(choice.code)}>{formatMorseCode(choice.code)}</button>)}
                     </div>
                     {feedback && <div className={feedback === 'correct' ? 'quiz-feedback good' : 'quiz-feedback retry'}>{feedback === 'correct' ? 'Correct. You recalled the pattern.' : 'Not quite. Think of the sequence, then try again.'}</div>}
                     {feedback === 'correct' && questionIndex < lessonCharacters.length - 1 && <button className="lesson-primary-button" onClick={continueQuiz}>Next question <span>→</span></button>}
@@ -498,7 +502,7 @@ function MorseVisualizerPage() {
         <div className="visualizer-main-panel">
           <div className="visualizer-character-heading">
             <div><span className="eyebrow">SELECTED CHARACTER</span><strong>{selectedLetter}</strong></div>
-            <div className="visualizer-official-code"><span>OFFICIAL MORSE</span><b>{selectedCharacter?.code.replaceAll('.', '·').replaceAll('-', '−')}</b></div>
+            <div className="visualizer-official-code"><span>OFFICIAL MORSE</span><b>{selectedCharacter ? formatMorseCode(selectedCharacter.code) : ''}</b></div>
           </div>
 
           <div className="visualizer-phrase-card">
@@ -561,7 +565,6 @@ function MorseVisualizerPage() {
 
 type PracticeMode = 'Decode' | 'Encode'
 type AssessmentQuestion = { character: (typeof MORSE_CHARACTERS)[number]; choices: (typeof MORSE_CHARACTERS)[number][] }
-type AssessmentAttempt = StoredAttempt
 
 function shuffled<T,>(items: T[]): T[] {
   const result = [...items]
@@ -642,7 +645,7 @@ function PracticePage() {
 
   const correctValue = mode === 'Decode' ? question.character : question.code
   const isCorrect = answer === correctValue
-  const displayCode = (code: string) => code.replaceAll('.', '·').replaceAll('-', '−')
+  const displayCode = (code: string) => formatMorseCode(code)
 
   return (
     <section className="training-page">
@@ -703,7 +706,7 @@ function AssessmentsPage() {
   const [selectedAnswer, setSelectedAnswer] = useState('')
   const [answers, setAnswers] = useState<string[]>([])
   const [finished, setFinished] = useState(false)
-  const [attempts, setAttempts] = useState<AssessmentAttempt[]>(() =>
+  const [attempts, setAttempts] = useState<StoredAttempt[]>(() =>
     readStoredValue('morsecodev2-assessment-attempts', [], isAttemptHistory)
   )
 
@@ -755,7 +758,7 @@ function AssessmentsPage() {
       ) : finished ? (
         <div className="assessment-results">
           <div className="assessment-result-top"><span className="eyebrow">ASSESSMENT COMPLETE</span><strong>{percent}<small>%</small></strong><h2>{score} out of {questions.length} correct</h2><p>{percent >= 80 ? 'Strong recall. You are building reliable recognition.' : percent >= 60 ? 'Good progress. Review the patterns you missed and try again.' : 'Keep practising. Revisit the reference and learning lessons, then try another assessment.'}</p></div>
-          <div className="assessment-review"><div className="eyebrow">ANSWER REVIEW</div>{questions.map((item, index) => { const correct = answers[index] === item.character.code; return <div className="assessment-review-row" key={item.character.character}><span className={correct ? 'review-status good' : 'review-status bad'}>{correct ? '✓' : '×'}</span><strong>{item.character.character}</strong><span>{item.character.code.replaceAll('.', '·').replaceAll('-', '−')}</span><small>{correct ? 'CORRECT' : 'MISSED'}</small></div> })}</div>
+          <div className="assessment-review"><div className="eyebrow">ANSWER REVIEW</div>{questions.map((item, index) => { const correct = answers[index] === item.character.code; return <div className="assessment-review-row" key={item.character.character}><span className={correct ? 'review-status good' : 'review-status bad'}>{correct ? '✓' : '×'}</span><strong>{item.character.character}</strong><span>{formatMorseCode(item.character.code)}</span><small>{correct ? 'CORRECT' : 'MISSED'}</small></div> })}</div>
           <button className="lesson-primary-button" onClick={startAssessment}>Try another assessment <span>↻</span></button>
         </div>
       ) : (
@@ -764,7 +767,7 @@ function AssessmentsPage() {
           <div className="assessment-progress"><span style={{ width: ((questionIndex / questions.length) * 100) + '%' }} /></div>
           <p className="assessment-question-prompt">Which Morse pattern belongs to this character?</p>
           <strong className="assessment-character">{currentQuestion.character.character}</strong>
-          <div className="assessment-options">{currentQuestion.choices.map((choice) => <button key={choice.character} className={selectedAnswer === choice.code ? 'assessment-option selected' : 'assessment-option'} onClick={() => setSelectedAnswer(choice.code)}>{choice.code.replaceAll('.', '·').replaceAll('-', '−')}</button>)}</div>
+          <div className="assessment-options">{currentQuestion.choices.map((choice) => <button key={choice.character} className={selectedAnswer === choice.code ? 'assessment-option selected' : 'assessment-option'} onClick={() => setSelectedAnswer(choice.code)}>{formatMorseCode(choice.code)}</button>)}</div>
           <div className="assessment-test-footer"><span>{selectedAnswer ? 'Answer recorded. You can still change it.' : 'Select one answer to continue.'}</span>{questionIndex < questions.length - 1 ? <button className="lesson-primary-button" disabled={!selectedAnswer} onClick={nextQuestion}>Next question <span>→</span></button> : <button className="lesson-primary-button" disabled={!selectedAnswer} onClick={submitAssessment}>Submit assessment <span>✓</span></button>}</div>
         </div>
       )}
@@ -778,21 +781,12 @@ function AssessmentsPage() {
 
 
 type ListeningQuestion = { character: (typeof MORSE_CHARACTERS)[number]; choices: (typeof MORSE_CHARACTERS)[number][] }
-type ListeningAttempt = StoredAttempt
 
-function shuffledListening<T,>(items: T[]): T[] {
-  const result = [...items]
-  for (let index = result.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1))
-    ;[result[index], result[swapIndex]] = [result[swapIndex], result[index]]
-  }
-  return result
-}
 
 function createListeningQuestion(): ListeningQuestion {
-  const character = shuffledListening(MORSE_CHARACTERS)[0]
-  const alternatives = shuffledListening(MORSE_CHARACTERS.filter((item) => item.character !== character.character)).slice(0, 3)
-  return { character, choices: shuffledListening([character, ...alternatives]) }
+  const character = shuffled(MORSE_CHARACTERS)[0]
+  const alternatives = shuffled(MORSE_CHARACTERS.filter((item) => item.character !== character.character)).slice(0, 3)
+  return { character, choices: shuffled([character, ...alternatives]) }
 }
 
 function playMorseAudio(code: string, context: AudioContext, unitMs: number, frequency: number) {
@@ -834,13 +828,13 @@ function ListeningPage() {
   const [score, setScore] = useState(0)
   const [streak, setStreak] = useState(0)
   const [roundComplete, setRoundComplete] = useState(false)
-  const [attempts, setAttempts] = useState<ListeningAttempt[]>(() =>
+  const [attempts, setAttempts] = useState<StoredAttempt[]>(() =>
     readStoredValue('morsecodev2-listening-attempts', [], isAttemptHistory)
   )
 
   const unitMs = 1200 / speed
   const selected = MORSE_CHARACTERS.find((item) => item.character === selectedCharacter) ?? MORSE_CHARACTERS[0]
-  const codeText = (code: string) => code.replaceAll('.', '·').replaceAll('-', '−')
+  const codeText = (code: string) => formatMorseCode(code)
 
   const playCode = async (code: string) => {
     const context = audioContextRef.current ?? new AudioContext()
@@ -961,7 +955,6 @@ function ListeningPage() {
 }
 
 
-type ProgressAttempt = StoredAttempt
 
 function readProgressData<T,>(key: string, fallback: T, validate: (value: unknown) => value is T): T {
   return readStoredValue(key, fallback, validate)
@@ -970,8 +963,8 @@ function readProgressData<T,>(key: string, fallback: T, validate: (value: unknow
 function ProgressPage({ onContinue }: { onContinue: (lessonIndex: number) => void }) {
   const [completedLessons] = useState<number[]>(() => readProgressData('morsecodev2-completed-lessons', [], isCompletedLessons))
   const [practiceStats] = useState(() => readProgressData('morsecodev2-practice-stats', { answered: 0, correct: 0, bestStreak: 0 }, isPracticeStats))
-  const [assessmentAttempts] = useState<ProgressAttempt[]>(() => readProgressData('morsecodev2-assessment-attempts', [], isAttemptHistory))
-  const [listeningAttempts] = useState<ProgressAttempt[]>(() => readProgressData('morsecodev2-listening-attempts', [], isAttemptHistory))
+  const [assessmentAttempts] = useState<StoredAttempt[]>(() => readProgressData('morsecodev2-assessment-attempts', [], isAttemptHistory))
+  const [listeningAttempts] = useState<StoredAttempt[]>(() => readProgressData('morsecodev2-listening-attempts', [], isAttemptHistory))
 
   const lessonPercent = Math.round((completedLessons.length / LETTER_LESSONS.length) * 100)
   const practiceAccuracy = practiceStats.answered ? Math.round((practiceStats.correct / practiceStats.answered) * 100) : 0
