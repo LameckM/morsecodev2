@@ -1,32 +1,95 @@
-# React + TypeScript + Vite
+# Morse Code Learning Studio
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A browser-based learning environment for studying International Morse Code through guided lessons, active recall, practice, listening exercises, assessments, and progress tracking.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Guided lessons:** Learn the alphabet in seven progressive groups, with memory phrases and recall checks.
+- **Morse visualizer:** Explore mnemonic patterns and hear their dot-and-dash rhythm.
+- **Practice:** Switch between decoding Morse signals and encoding characters, with letter, number, and punctuation filters.
+- **Listening:** Identify characters from audio signals with adjustable playback speed and tone frequency.
+- **Assessments:** Complete ten-question tests and review your answers.
+- **Reference library:** Search the International Morse Code character set.
+- **Progress dashboard:** Review lesson completion, practice accuracy, assessment results, and listening performance.
 
-## React Compiler
+## Tech stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- TypeScript
+- Vite
+- Oxlint
+- Web Audio API
 
-## Expanding the Oxlint configuration
+## Requirements
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- Node.js (current LTS recommended)
+- npm
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Getting started
+
+Clone the repository and install its dependencies:
+
+```bash
+git clone https://github.com/LameckM/morsecodev2.git
+cd morsecodev2
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Vite will print the local development URL in the terminal.
+
+## Available scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the local development server |
+| `npm run build` | Type-check and create a production build |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | Run Oxlint |
+
+Before submitting changes, run:
+
+```bash
+npm run build
+npm run lint
+```
+
+## Progress and browser storage
+
+Learning progress and activity are stored in the browser's local storage. The app currently uses these keys:
+
+- `morsecodev2-completed-lessons`
+- `morsecodev2-practice-stats`
+- `morsecodev2-assessment-attempts`
+- `morsecodev2-listening-attempts`
+
+This means progress is local to the browser and device. It is not synced between browsers or devices. Clearing site data may remove saved progress.
+
+## Project structure
+
+```text
+src/
+  data/
+    lessons.ts
+    mnemonics.ts
+    morseCode.ts
+  App.tsx
+  App.css
+  index.css
+  main.tsx
+index.html
+package.json
+```
+
+## Morse code conventions
+
+The reference and training activities use International Morse Code. In the mnemonic lessons, uppercase words represent dashes and lowercase words represent dots. The visualizer and audio activities help connect those memory cues to the corresponding signals.
+
+## License
+
+No license has been specified for this repository yet. Contact the repository owner before redistributing or reusing the project.
