@@ -6,15 +6,34 @@ import { LETTER_MNEMONICS } from './data/mnemonics'
 
 type Page = 'Overview' | 'Learn' | 'Practice' | 'Listening' | 'Assessments' | 'Morse Visualizer' | 'Reference' | 'Progress'
 
-const navigation: { label: Page; icon: string; description: string }[] = [
-  { label: 'Overview', icon: '◫', description: 'Your learning dashboard' },
-  { label: 'Learn', icon: '▤', description: 'Build your Morse foundations' },
-  { label: 'Practice', icon: '⌁', description: 'Train your recognition' },
-  { label: 'Listening', icon: '♫', description: 'Recognise Morse by sound' },
-  { label: 'Assessments', icon: '✓', description: 'Measure your recall' },
-  { label: 'Morse Visualizer', icon: '◉', description: 'See and hear Morse signals' },
-  { label: 'Reference', icon: '▦', description: 'Letters, numbers and symbols' },
-  { label: 'Progress', icon: '↗', description: 'Your learning journey' },
+const ICON_PATHS: Record<Page, string> = {
+  Overview: 'M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z',
+  Learn: 'M4 5h7a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-7',
+  Practice: 'M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM11 12h9',
+  Listening: 'M4 14v-2a8 8 0 0 1 16 0v2M3 14h4v6H3zM17 14h4v6h-4z',
+  Assessments: 'M5 12l4.5 4.5L19 7',
+  'Morse Visualizer': 'M3 12h3l2-6 4 12 3-9 2 3h4',
+  Reference: 'M5 6h14M5 12h14M5 18h14',
+  Progress: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+}
+
+function NavIcon({ page }: { page: Page }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={ICON_PATHS[page]} />
+    </svg>
+  )
+}
+
+const navigation: { label: Page; description: string }[] = [
+  { label: 'Overview', description: 'Your learning dashboard' },
+  { label: 'Learn', description: 'Build your Morse foundations' },
+  { label: 'Practice', description: 'Train your recognition' },
+  { label: 'Listening', description: 'Recognise Morse by sound' },
+  { label: 'Assessments', description: 'Measure your recall' },
+  { label: 'Morse Visualizer', description: 'See and hear Morse signals' },
+  { label: 'Reference', description: 'Letters, numbers and symbols' },
+  { label: 'Progress', description: 'Your learning journey' },
 ]
 
 type PracticeStats = { answered: number; correct: number; bestStreak: number }
@@ -417,7 +436,7 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
   }
 
   return (
-    <section className="learn-page">
+    <section className="learn-page lesson-mode">
       <button className="lesson-back-link" onClick={backToPath}>← Back to learning path</button>
       <div className="sr-only" aria-live="polite" aria-atomic="true">{feedback === 'correct' ? `Correct. ${target?.character ?? ''}.` : feedback === 'incorrect' ? `Incorrect answer for ${target?.character ?? 'this character'}. Try again.` : ''}</div>
       <div className="learn-intro">
@@ -1210,7 +1229,7 @@ function App() {
               }}
               aria-current={activePage === item.label ? 'page' : undefined}
             >
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+              <span className="nav-icon" aria-hidden="true"><NavIcon page={item.label} /></span>
               <span>{item.label}</span>
               {item.label === 'Morse Visualizer' && <span className="nav-new">TOOL</span>}{item.label === 'Assessments' && <span className="nav-new">TEST</span>}{item.label === 'Listening' && <span className="nav-new">AUDIO</span>}
             </button>

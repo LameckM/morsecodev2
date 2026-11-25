@@ -1,3 +1,3 @@
-:root{font-family:'DM Sans',sans-serif;color:#EDF0FF;background:#111529;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-optical-sizing:auto}
-*{box-sizing:border-box}body{margin:0;min-width:320px;min-height:100vh;background:#111529}button{font:inherit}
-button:focus-visible{outline:2px solid #929FFF;outline-offset:3px}::selection{background:#343D5C;color:#EDF0FF}
+:root{font-family:'Nunito',sans-serif;color:#2A2118;background:#FBF6EC;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-optical-sizing:auto}
+*{box-sizing:border-box}body{margin:0;min-width:320px;min-height:100vh;background:#FBF6EC}button{font:inherit}
+button:focus-visible{outline:2px solid #0F766E;outline-offset:3px}::selection{background:#E6DCC8;color:#2A2118}
