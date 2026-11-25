@@ -107,6 +107,22 @@ function writeStoredValue(key: string, value: unknown): boolean {
 
 
 
+const STORAGE_PREFIX = 'morsecodev2-'
+
+function clearAllProgress(): boolean {
+  try {
+    const keys: string[] = []
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index)
+      if (key && key.startsWith(STORAGE_PREFIX)) keys.push(key)
+    }
+    keys.forEach((key) => window.localStorage.removeItem(key))
+    return true
+  } catch {
+    return false
+  }
+}
+
 function ReferencePage() {
   const [category, setCategory] = useState<'All' | MorseCategory>('All')
   const [search, setSearch] = useState('')
@@ -1132,7 +1148,52 @@ function readProgressData<T,>(key: string, fallback: T, validate: (value: unknow
   return readStoredValue(key, fallback, validate)
 }
 
-function ProgressPage({ onContinue }: { onContinue: (lessonIndex: number) => void }) {
+function DangerZone({ onReset, justReset }: { onReset: () => boolean; justReset: boolean }) {
+  const [confirming, setConfirming] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [failed, setFailed] = useState(false)
+  const confirmed = typed === 'RESET'
+
+  const cancel = () => {
+    setConfirming(false)
+    setTyped('')
+    setFailed(false)
+  }
+
+  const submit = () => {
+    if (!confirmed) return
+    if (!onReset()) setFailed(true)
+  }
+
+  return (
+    <section className="danger-zone" aria-labelledby="danger-zone-title">
+      <h2 id="danger-zone-title">Danger zone</h2>
+      <div className="danger-box">
+        <div className="danger-row">
+          <div className="danger-copy">
+            <strong>Reset all progress</strong>
+            <p>Deletes your completed lessons, practice stats, assessment scores and listening rounds from this browser. You will start learning from the very beginning. This cannot be undone.</p>
+          </div>
+          {!confirming && <button type="button" className="danger-button" onClick={() => setConfirming(true)} aria-expanded={false}>Reset progress</button>}
+        </div>
+        {confirming && (
+          <div className="danger-confirm">
+            <label htmlFor="danger-confirm-input">Type <b>RESET</b> to confirm you want to delete all your progress.</label>
+            <input id="danger-confirm-input" type="text" value={typed} onChange={(event) => setTyped(event.target.value)} autoComplete="off" autoCapitalize="characters" spellCheck={false} autoFocus />
+            <div className="danger-actions">
+              <button type="button" className="danger-button solid" disabled={!confirmed} onClick={submit}>Delete all my progress</button>
+              <button type="button" className="danger-cancel" onClick={cancel}>Cancel</button>
+            </div>
+            {failed && <p className="danger-error" role="alert">Your browser blocked the reset. Clear this site's data in your browser settings instead.</p>}
+          </div>
+        )}
+      </div>
+      <p className="danger-notice" role="status">{justReset ? 'Progress reset. You are back at the start.' : ''}</p>
+    </section>
+  )
+}
+
+function ProgressPage({ onContinue, onReset, justReset }: { onContinue: (lessonIndex: number) => void; onReset: () => boolean; justReset: boolean }) {
   const [completedLessons] = useState<number[]>(() => readProgressData('morsecodev2-completed-lessons', [], isCompletedLessons))
   const [practiceStats] = useState(() => readProgressData('morsecodev2-practice-stats', { answered: 0, correct: 0, bestStreak: 0 }, isPracticeStats))
   const [assessmentAttempts] = useState<StoredAttempt[]>(() => readProgressData('morsecodev2-assessment-attempts', [], isAttemptHistory))
@@ -1187,6 +1248,7 @@ function ProgressPage({ onContinue }: { onContinue: (lessonIndex: number) => voi
         <div className="progress-panel progress-next-panel"><span className="eyebrow">YOUR NEXT STEP</span><h2>{nextLesson ? nextLesson.title : 'The alphabet is complete.'}</h2><p>{nextLesson ? nextLesson.focus : 'You have completed all seven guided letter lessons. Keep your skills sharp with practice and listening challenges.'}</p><button className="lesson-primary-button" onClick={() => onContinue(Math.max(0, LETTER_LESSONS.findIndex((lesson) => !completedLessons.includes(lesson.id))))}>Continue learning <span>→</span></button></div>
         <div className="progress-panel"><div className="progress-panel-heading"><div><span className="eyebrow">RECENT ACTIVITY</span><h2>Latest sessions</h2></div></div>{activity.length ? activity.map((attempt,index) => <div className="progress-activity-row" key={attempt.kind + index}><span>{attempt.kind}</span><small>{attempt.date}</small><strong>{attempt.score}/{attempt.total}</strong></div>) : <p className="progress-empty">Your completed assessments and listening rounds will appear here.</p>}</div>
       </div>
+      <DangerZone onReset={onReset} justReset={justReset} />
       <p className="progress-storage-note">Progress is saved locally in this browser. Clearing browser data or using another device may reset or separate these records.</p>
     </section>
   )
@@ -1197,10 +1259,36 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [learnStartIndex, setLearnStartIndex] = useState(0)
 
+  const [progressKey, setProgressKey] = useState(0)
+  const [justReset, setJustReset] = useState(false)
+
   const selectPage = (page: Page) => {
     setActivePage(page)
     setMenuOpen(false)
+    setJustReset(false)
   }
+
+  const resetProgress = () => {
+    if (!clearAllProgress()) return false
+    setLearnStartIndex(0)
+    setProgressKey((current) => current + 1)
+    setJustReset(true)
+    return true
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [menuOpen])
 
   const getResumeLessonIndex = () => {
     const completed = readStoredValue('morsecodev2-completed-lessons', [], isCompletedLessons)
@@ -1211,7 +1299,10 @@ function App() {
   return (
     <div className="app-shell">
       {menuOpen && <button className="sidebar-scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
-      <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
+      <aside id="app-sidebar" className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
+        <button type="button" className="sidebar-close" aria-label="Close navigation" onClick={() => setMenuOpen(false)}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
         <div className="brand">
           <div className="brand-mark" aria-hidden="true"><span /> <span /> <span /></div>
           <div><strong>MORSE<span>CODE</span></strong><small>LEARNING STUDIO</small></div>
@@ -1251,7 +1342,9 @@ function App() {
 
       <main className="main-area">
         <header className="topbar">
-          <button className="mobile-menu" aria-label="Open navigation" onClick={() => setMenuOpen(true)}>☰</button>
+          <button className="mobile-menu" aria-label="Open navigation" aria-expanded={menuOpen} aria-controls="app-sidebar" onClick={() => setMenuOpen(true)}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
           <div className="breadcrumb"><span>Workspace</span><b>/</b><strong>{activePage}</strong></div>
           <div className="topbar-right"><span className="status-dot" /> <span>YOUR LEARNING SPACE</span></div>
         </header>
@@ -1322,7 +1415,7 @@ function App() {
           ) : activePage === 'Assessments' ? (
             <AssessmentsPage />
           ) : activePage === 'Progress' ? (
-            <ProgressPage onContinue={(index) => { setLearnStartIndex(index); selectPage('Learn') }} />
+            <ProgressPage key={progressKey} onReset={resetProgress} justReset={justReset} onContinue={(index) => { setLearnStartIndex(index); selectPage('Learn') }} />
           ) : activePage === 'Morse Visualizer' ? (
             <MorseVisualizerPage />
           ) : (
