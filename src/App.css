@@ -822,3 +822,35 @@ input, select { font-family: inherit; }
 .danger-notice { min-height: 22px; margin: 10px 0 0; font-size: 14px; font-weight: 700; color: #0B5A54; }
 .danger-button:focus-visible, .danger-cancel:focus-visible, .danger-confirm input:focus-visible { outline: 3px solid #2A2118; outline-offset: 3px; }
 .feature-card, .feature-card.practice-card { padding: 19px !important; min-height: 210px; }
+
+/* ===== No tap flash on phones, tidy focus ===== */
+* { -webkit-tap-highlight-color: transparent; }
+button, a, input, select, summary { touch-action: manipulation; }
+button:focus:not(:focus-visible), a:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: none; }
+
+/* ===== Lesson details pop up on phones ===== */
+.path-sheet-close, .path-scrim { display: none; }
+@media (max-width: 760px) {
+  .path-shell { flex-direction: column; gap: 14px; }
+  .path-side { order: -1; width: 100%; }
+  .path-card { display: none; }
+  .path-card.sheet-open { display: grid; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; max-height: 86vh; max-height: 86dvh; overflow-y: auto; overscroll-behavior: contain; border-radius: 22px 22px 0 0; border-top-width: 8px; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); box-shadow: 0 -12px 40px rgba(42,33,24,.3); animation: path-sheet-in .22s ease-out; }
+  .path-scrim { display: block; position: fixed; inset: 0; z-index: 39; border: 0; padding: 0; background: rgba(42,33,24,.5); cursor: default; }
+  .path-card.sheet-open .path-sheet-close { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: -6px -6px -6px 0; border: 2px solid #E6DCC8; border-radius: 12px; background: #fff; color: #2A2118; cursor: pointer; }
+  .path-card.sheet-open .path-card-top { gap: 10px; }
+  .path-card.sheet-open .path-badge { margin-left: auto; }
+  .path-node.selected { box-shadow: none; }
+}
+@keyframes path-sheet-in { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .path-card.sheet-open { animation: none; } }
+
+/* Fix: phone gap above path, unit banner contrast */
+.path-unit { border-color: #0B5A54; }
+.path-unit h2, .path-unit p { color: #fff; }
+@media (max-width: 760px) {
+  .path-main { flex: 0 0 auto; width: 100%; }
+  .path-side { flex: 0 0 auto; }
+  .path-unit { max-width: none; }
+  .path-list { max-width: none; }
+}
+.path-node.locked { border-bottom-color: #C9BDA3; }
