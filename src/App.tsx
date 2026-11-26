@@ -238,10 +238,34 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
   )
   const pathAudioRef = useRef<AudioContext | null>(null)
 
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const sheetCloseRef = useRef<HTMLButtonElement | null>(null)
+
   useEffect(() => () => {
     void pathAudioRef.current?.close()
     pathAudioRef.current = null
   }, [])
+
+  useEffect(() => {
+    if (!sheetOpen) return
+    const narrow = window.matchMedia('(max-width: 760px)')
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSheetOpen(false)
+    }
+    const onWidthChange = (event: MediaQueryListEvent) => {
+      if (!event.matches) setSheetOpen(false)
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    sheetCloseRef.current?.focus()
+    window.addEventListener('keydown', onKeyDown)
+    narrow.addEventListener('change', onWidthChange)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+      narrow.removeEventListener('change', onWidthChange)
+    }
+  }, [sheetOpen])
 
   const lesson = LETTER_LESSONS[selectedLesson]
   const alphabet = MORSE_CHARACTERS.filter((item) => item.category === 'Letter')
@@ -334,8 +358,14 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
   const isLocked = (index: number) => index > 0 && !completed.includes(LETTER_LESSONS[index - 1].id)
   const firstOpenIndex = LETTER_LESSONS.findIndex((item) => !completed.includes(item.id))
 
+  const closePathSheet = () => {
+    setSheetOpen(false)
+    window.setTimeout(() => document.querySelector<HTMLButtonElement>('.path-node.selected')?.focus({ preventScroll: true }), 0)
+  }
+
   const openLesson = (index: number) => {
     if (isLocked(index)) return
+    setSheetOpen(false)
     chooseLesson(index)
     if (index === 0 && completed.length === 0) setShowFoundations(true)
     setView('lesson')
@@ -390,7 +420,10 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
                     <button
                       type="button"
                       className={`path-node ${state}${pathIndex === index ? ' selected' : ''}`}
-                      onClick={() => setPathIndex(index)}
+                      onClick={() => {
+                        setPathIndex(index)
+                        if (window.matchMedia('(max-width: 760px)').matches) setSheetOpen(true)
+                      }}
                       aria-pressed={pathIndex === index}
                       aria-label={`Lesson ${item.id}, ${item.title}, ${done ? 'completed' : locked ? 'locked' : 'ready'}`}
                     >
@@ -409,6 +442,7 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
             </ol>
           </div>
 
+          {sheetOpen && <button type="button" className="path-scrim" aria-label="Close lesson details" tabIndex={-1} onClick={closePathSheet} />}
           <aside className="path-side" aria-label="Lesson details and progress">
             <div className="path-stats">
               <div className="path-stat"><span>LESSONS</span><strong>{completed.length} / {LETTER_LESSONS.length}</strong></div>
@@ -417,10 +451,18 @@ function LearnPage({ initialLessonIndex = 0 }: { initialLessonIndex?: number }) 
             </div>
             <div className="path-track" role="progressbar" aria-valuenow={progressPercent} aria-valuemin={0} aria-valuemax={100} aria-label="Course progress"><span style={{ width: progressPercent + '%' }} /></div>
 
-            <section className="path-card">
+            <section
+              className={`path-card${sheetOpen ? ' sheet-open' : ''}`}
+              role={sheetOpen ? 'dialog' : undefined}
+              aria-modal={sheetOpen ? true : undefined}
+              aria-label={sheetOpen ? `Lesson ${pathLesson.id}: ${pathLesson.title}` : undefined}
+            >
               <div className="path-card-top">
                 <span className="path-kicker">LESSON {String(pathLesson.id).padStart(2, '0')}</span>
                 <span className="path-badge">{pathDone ? 'DONE' : pathLocked ? 'LOCKED' : 'UP NEXT'}</span>
+                <button type="button" ref={sheetCloseRef} className="path-sheet-close" aria-label="Close lesson details" onClick={closePathSheet}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </button>
               </div>
               <h2>{pathLesson.title}</h2>
               <p>{pathLesson.focus}</p>
